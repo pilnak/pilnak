@@ -1,0 +1,12 @@
+[
+  {
+    "origin": [
+      "http://localhost:8080",
+      "http://localhost:5173",
+      "https://yourdomain.com"
+    ],
+    "method": ["GET", "POST", "PUT", "DELETE", "HEAD"],
+    "maxAgeSeconds": 3600,
+    "responseHeader": ["Content-Type", "Authorization"]
+  }
+]

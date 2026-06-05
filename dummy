@@ -1,0 +1,60 @@
+{
+  "cells": [],
+  "metadata": {
+    "language_info": {
+      "name": "python"
+    }
+  },
+  "nbformat": 4,
+  "nbformat_minor": 2
+}
+
+Errors I want to fix:
+
+Driver Camera:
+
+There should be a camera option on the driver’s side to allow them to upload their picture and pictures of their car.
+
+Delivery Workflow:
+
+When a user makes a delivery request, it should appear on the admin dashboard.
+
+The admin can then send a price quote to the customer.
+
+If the customer accepts the price, the admin assigns a driver to the customer.
+
+The admin should also be able to view the customer’s information to contact them for negotiation if needed.
+
+Price Negotiation:
+
+If the customer wants to negotiate, they can request a call.
+
+The admin can then call the customer to negotiate the price.
+
+After negotiations, the admin can input the new price and provide account details for payment.
+
+Once the customer has paid, they can click a “Sent” button.
+
+The admin can then confirm the transaction and assign a driver.
+
+Driver Workflow:
+
+If a driver is online, they can accept a delivery request and access the customer’s contact information.
+
+The driver receives live directions on a map to reach the customer’s location.
+
+Upon arrival, the driver can click “Arrived at Customer Location” and call the customer.
+
+After loading the delivery, the driver drives to the drop-off location, takes a picture of the delivered item, and clicks “Delivery Completed.”
+
+Notifications & Tracking:
+
+The admin should receive the delivery confirmation picture.
+
+The customer should be able to track the driver in real time during the delivery.
+
+The admin should also be able to track all deliveries on a live map.
+
+On the map page, the admin can see all drivers online at each location.
+
+The admin can search a specific location to check for nearby drivers and assign the closest driver to a customer.

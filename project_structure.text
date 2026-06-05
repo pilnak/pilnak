@@ -1,0 +1,240 @@
+- .env
+- .github
+  - appmod
+    - appcat
+  - java-upgrade
+    - hooks
+      - scripts
+- .gitignore
+- bun.lockb
+- components.json
+- cors.json
+- DASHBOARD_COMMUNICATION.md
+- dist
+  - assets
+    - AdminDashboard-BVMnRPBX.js
+    - AdminRegister-46i9XSUD.js
+    - arrow-left-DmrUgU38.js
+    - arrow-right-CZ5y3nry.js
+    - Auth-CPxQ4TSz.js
+    - CameraCapture-CrWrforu.js
+    - chart-column-BWAYeR2_.js
+    - ChatPanel-COD-ptG8.js
+    - check-BVg-SGiK.js
+    - circle-x-DeqhArfN.js
+    - clock-CVqYcxj9.js
+    - CompanyDashboard-BrF6mwC7.js
+    - CompanyPendingApproval-DHIHLQgs.js
+    - CustomerDashboard-Bb_oC-sR.js
+    - dialog-DSVddFEu.js
+    - DriverDashboard-Dop8MVJD.js
+    - DriverRegistration-bcyAEBHG.js
+    - eye-BxBKXvKR.js
+    - eye-off-BzAt5uVN.js
+    - globe-B60uwqhw.js
+    - HeroSection-DMcMoafS.js
+    - history-BGGdlqw7.js
+    - index-9HTsjJdz.js
+    - index-BM_8XWJK.js
+    - index-DE3evwz5.css
+    - index.esm-BVS1JeGh.js
+    - input-BVn4o_uU.js
+    - label-Yrslrx-Y.js
+    - Landing-qcGwqgI2.js
+    - layout-dashboard-KssdyOTh.js
+    - LocationPermissionModal-DbfDCzDT.js
+    - lock-Dg74oN_O.js
+    - log-out-DybmdxaU.js
+    - Logo-uH-VIAkD.js
+    - mail-D87FNMV6.js
+    - map-pin-hHUGCDHc.js
+    - MapView-JNUuqITH.js
+    - navigation-DsMejSY2.js
+    - NotFound-gkWPLTS7.js
+    - package-5JE5D7_a.js
+    - shield-check-Cj244ZCT.js
+    - table-BBHJprxr.js
+    - textarea-BkVgQfiY.js
+    - trending-up-BK3Ie8Xv.js
+    - Untitled design (1)-CgoXtqcT.gif
+    - Untitled design (2)-pEGuv3W1.gif
+    - Untitled design (3)-C0by67k1.gif
+    - upload-TRopWyrd.js
+    - user-check-B0fiZGr1.js
+    - users-PW01UQU9.js
+    - useSessionState-D3Q-nxAM.js
+    - wallet-FHmN9ebb.js
+  - index.html
+  - logo.png
+  - logo.svg
+  - manifest.json
+  - placeholder.svg
+  - robots.txt
+- DOCUMENTATION.md
+- dummy
+- eslint.config.js
+- FUNCTIONALITY_OVERVIEW.md
+- functions
+  - package.json
+  - src
+    - index.ts
+  - tsconfig.json
+- index.html
+- package-lock.json
+- package.json
+- postcss.config.js
+- project_structure.text
+- public
+  - logo.png
+  - logo.svg
+  - manifest.json
+  - placeholder.svg
+  - robots.txt
+- README.md
+- src
+  - App.css
+  - App.tsx
+  - assets
+    - Untitled design (1).gif
+    - Untitled design (2).gif
+    - Untitled design (3).gif
+  - components
+    - admin
+    - AdminPinModal.tsx
+    - booking
+      - BookingBottomSheet.tsx
+      - DriverFoundCard.tsx
+      - TransportOptions.tsx
+    - call
+      - VoiceCall.tsx
+    - camera
+      - CameraCapture.tsx
+    - chat
+      - ChatPanel.tsx
+    - delivery
+      - DeliveryRequestForm.tsx
+      - DeliveryTracking.tsx
+    - driver
+      - DriverProfileModal.tsx
+    - landing
+      - CTASection.tsx
+      - FeaturesSection.tsx
+      - Footer.tsx
+      - Header.tsx
+      - HeroSection.tsx
+      - HeroSlideshow.tsx
+      - HowItWorksSection.tsx
+      - LocationInput.tsx
+      - SubHero.tsx
+    - Logo.tsx
+    - map
+      - LocationPermissionModal.tsx
+      - MapView.tsx
+    - NavLink.tsx
+    - ui
+      - accordion.tsx
+      - alert-dialog.tsx
+      - alert.tsx
+      - aspect-ratio.tsx
+      - avatar.tsx
+      - badge.tsx
+      - breadcrumb.tsx
+      - button.tsx
+      - calendar.tsx
+      - card.tsx
+      - carousel.tsx
+      - chart.tsx
+      - checkbox.tsx
+      - collapsible.tsx
+      - command.tsx
+      - context-menu.tsx
+      - dialog.tsx
+      - drawer.tsx
+      - dropdown-menu.tsx
+      - form.tsx
+      - hover-card.tsx
+      - input-otp.tsx
+      - input.tsx
+      - label.tsx
+      - menubar.tsx
+      - navigation-menu.tsx
+      - pagination.tsx
+      - popover.tsx
+      - progress.tsx
+      - radio-group.tsx
+      - resizable.tsx
+      - scroll-area.tsx
+      - select.tsx
+      - separator.tsx
+      - sheet.tsx
+      - sidebar.tsx
+      - skeleton.tsx
+      - slider.tsx
+      - sonner.tsx
+      - switch.tsx
+      - table.tsx
+      - tabs.tsx
+      - textarea.tsx
+      - toast.tsx
+      - toaster.tsx
+      - toggle-group.tsx
+      - toggle.tsx
+      - tooltip.tsx
+      - use-toast.ts
+  - contexts
+    - BookingContext.tsx
+  - global.d.ts
+  - hooks
+    - use-mobile.tsx
+    - use-toast.ts
+    - useAuth.ts
+    - useBlockBack.ts
+    - useCompanyAuth.ts
+    - useDistanceCalculation.ts
+    - useGeolocation.ts
+    - useLocationSearch.ts
+    - useReverseGeocode.ts
+    - useSessionState.ts
+  - index.css
+  - integrations
+    - firebase
+      - client.ts
+    - supabase
+  - lib
+    - deliveryName.ts
+    - pricing.ts
+    - transportOptions.ts
+    - utils.ts
+  - main.tsx
+  - pages
+    - AdminDashboard.tsx
+    - AdminRegister.tsx
+    - Auth.tsx
+    - CompanyDashboard.tsx
+    - CompanyPendingApproval.tsx
+    - CustomerDashboard.tsx
+    - DriverDashboard.tsx
+    - DriverRegistration.tsx
+    - Landing.tsx
+    - NotFound.tsx
+  - services
+    - companyService.ts
+    - firebase.ts
+  - test
+    - example.test.ts
+    - setup.ts
+  - types
+    - booking.ts
+    - database.ts
+  - vite-env.d.ts
+- supabase
+  - config.toml
+  - migrations
+    - 20260128113445_28cc7c2e-bdcb-4585-a484-ced6b59429c2.sql
+    - 20260128113614_159f26b4-c983-4146-809a-5f6566335d19.sql
+- tailwind.config.ts
+- tsconfig.app.json
+- tsconfig.json
+- tsconfig.node.json
+- vite.config.ts
+- vitest.config.ts

@@ -1,0 +1,497 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Pilnak Design System */
+
+@layer base {
+  :root {
+    /* Brand Colors */
+    --pilnak-green: 145 100% 35%;
+    --pilnak-green-dark: 145 100% 27%;
+    --pilnak-green-light: 145 100% 45%;
+
+    /* Neutrals */
+    --pilnak-black: 0 0% 7%;
+    --pilnak-dark-gray: 0 0% 16%;
+    --pilnak-gray: 0 0% 40%;
+    --pilnak-light-gray: 0 0% 95%;
+    --pilnak-white: 0 0% 100%;
+
+    /* Semantic Colors */
+    --background: 0 0% 100%;
+    --foreground: 0 0% 7%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 7%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 7%;
+
+    --primary: 145 100% 35%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 0 0% 95%;
+    --secondary-foreground: 0 0% 7%;
+
+    --muted: 0 0% 95%;
+    --muted-foreground: 0 0% 40%;
+
+    --accent: 145 100% 45%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 145 100% 35%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 7%;
+
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
+    --ring: 145 100% 35%;
+
+    --radius: 1rem;
+
+    /* Gradients */
+    --gradient-primary: linear-gradient(
+      135deg,
+      hsl(145 100% 35%),
+      hsl(145 100% 27%)
+    );
+    --gradient-hero: linear-gradient(
+      180deg,
+      hsl(0 0% 100%) 0%,
+      hsl(145 100% 97%) 100%
+    );
+    --gradient-card: linear-gradient(
+      180deg,
+      hsl(0 0% 100%) 0%,
+      hsl(0 0% 98%) 100%
+    );
+
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md:
+      0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg:
+      0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --shadow-xl:
+      0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    --shadow-glow: 0 0 40px -10px hsl(145 100% 35% / 0.4);
+
+    /* Sidebar */
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 0 0% 16%;
+    --sidebar-primary: 145 100% 35%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 95%;
+    --sidebar-accent-foreground: 0 0% 7%;
+    --sidebar-border: 0 0% 90%;
+    --sidebar-ring: 145 100% 35%;
+  }
+
+  .dark {
+    --background: 0 0% 7%;
+    --foreground: 0 0% 95%;
+
+    --card: 0 0% 10%;
+    --card-foreground: 0 0% 95%;
+
+    --popover: 0 0% 10%;
+    --popover-foreground: 0 0% 95%;
+
+    --primary: 145 100% 35%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 0 0% 16%;
+    --secondary-foreground: 0 0% 95%;
+
+    --muted: 0 0% 16%;
+    --muted-foreground: 0 0% 60%;
+
+    --accent: 145 100% 40%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 0 0% 20%;
+    --input: 0 0% 20%;
+    --ring: 145 100% 35%;
+
+    --gradient-primary: linear-gradient(
+      135deg,
+      hsl(145 100% 35%),
+      hsl(145 100% 45%)
+    );
+    --gradient-hero: linear-gradient(
+      180deg,
+      hsl(0 0% 7%) 0%,
+      hsl(0 0% 10%) 100%
+    );
+    --gradient-card: linear-gradient(
+      180deg,
+      hsl(0 0% 12%) 0%,
+      hsl(0 0% 10%) 100%
+    );
+
+    --shadow-glow: 0 0 40px -10px hsl(145 100% 35% / 0.3);
+
+    --sidebar-background: 0 0% 7%;
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: 145 100% 40%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 16%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 0 0% 20%;
+    --sidebar-ring: 145 100% 35%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+    /* Remove iOS tap flash on all elements */
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    /* Prevent rubber-band scroll at the document root */
+    overscroll-behavior: none;
+    /* Use fill-available so the root never exceeds the visible area */
+    height: -webkit-fill-available;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family:
+      "Inter",
+      system-ui,
+      -apple-system,
+      sans-serif;
+    /* Match html height so children can use 100% safely */
+    min-height: -webkit-fill-available;
+    min-height: 100dvh;
+  }
+
+  /*
+   * iOS / Android auto-zoom prevention.
+   * Browsers zoom in when a focused input has font-size < 16px.
+   * Enforce 16px on mobile, allow desktop to use the component's own size.
+   */
+  input,
+  textarea,
+  select {
+    font-size: 1rem; /* 16px — prevents iOS Safari auto-zoom on focus */
+  }
+
+  @media (min-width: 768px) {
+    input,
+    textarea,
+    select {
+      font-size: inherit; /* Restore component-defined sizes on desktop */
+    }
+  }
+
+  /* Smooth, native-feeling scroll in every scrollable region */
+  * {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Remove 300ms tap delay on all interactive elements */
+  button,
+  a,
+  [role="button"],
+  input,
+  select,
+  textarea,
+  label {
+    touch-action: manipulation;
+  }
+}
+
+@layer components {
+  /* inDrive-style bottom sheet — includes safe-area padding for notched phones */
+  .bottom-sheet {
+    @apply fixed bottom-0 left-0 right-0 bg-card rounded-t-3xl shadow-xl z-50;
+    box-shadow: 0 -10px 40px -10px rgb(0 0 0 / 0.2);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  /* Map overlay card */
+  .map-card {
+    @apply bg-card/95 backdrop-blur-md rounded-2xl shadow-lg p-4;
+  }
+
+  /* Status badge */
+  .status-badge {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium;
+  }
+
+  .status-badge-success {
+    @apply bg-primary/10 text-primary;
+  }
+
+  .status-badge-warning {
+    @apply bg-warning/10 text-warning;
+  }
+
+  .status-badge-error {
+    @apply bg-destructive/10 text-destructive;
+  }
+
+  /* Glass morphism */
+  .glass {
+    @apply bg-card/80 backdrop-blur-xl border border-border/50;
+  }
+
+  /* Animated gradient border */
+  .gradient-border {
+    position: relative;
+  }
+
+  .gradient-border::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 2px;
+    background: var(--gradient-primary);
+    -webkit-mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+  }
+}
+
+@layer utilities {
+  /*
+   * Native-feeling scroll container for fixed-height panels.
+   * Use on any overflow-y-auto div that lives inside a fixed frame
+   * (bottom sheets, tabs, side drawers).
+   */
+  .scroll-area {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+  }
+
+  /* Safe-area padding helpers (usable as Tailwind classes) */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  .pl-safe {
+    padding-left: env(safe-area-inset-left, 0px);
+  }
+  .pr-safe {
+    padding-right: env(safe-area-inset-right, 0px);
+  }
+
+  /* Minimum 44×44pt touch targets (Apple HIG) */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .text-gradient {
+    @apply bg-clip-text text-transparent;
+    background-image: var(--gradient-primary);
+  }
+
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  .animate-pulse-slow {
+    animation: pulse 3s ease-in-out infinite;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.5s ease-out;
+  }
+
+  .animate-slide-down {
+    animation: slideDown 0.3s ease-out;
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-out;
+  }
+
+  .animate-scale-in {
+    animation: scaleIn 0.2s ease-out;
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes requestHighlight {
+  0% {
+    box-shadow:
+      0 0 0 0 rgba(0, 156, 65, 0.55),
+      0 2px 8px rgba(0, 0, 0, 0.06);
+  }
+  35% {
+    box-shadow:
+      0 0 0 8px rgba(0, 156, 65, 0.2),
+      0 2px 8px rgba(0, 0, 0, 0.06);
+  }
+  100% {
+    box-shadow:
+      0 0 0 0 rgba(0, 156, 65, 0),
+      0 2px 8px rgba(0, 0, 0, 0.06);
+  }
+}
+
+.request-highlight {
+  animation: requestHighlight 1.8s ease-out forwards;
+}
+
+/* ─── Sonner toast — Pilnak design system ──────────────────────────────────── */
+
+[data-sonner-toast] {
+  font-family:
+    "Inter",
+    system-ui,
+    -apple-system,
+    sans-serif !important;
+  background: #fefefe !important;
+  color: hsl(var(--card-foreground)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  border-left-width: 4px !important;
+  border-left-color: hsl(var(--border)) !important;
+  border-radius: calc(var(--radius) + 4px) !important;
+  box-shadow:
+    0 10px 15px -3px rgb(0 0 0 / 0.08),
+    0 4px 6px -4px rgb(0 0 0 / 0.06) !important;
+  padding-right: 2.75rem !important;
+}
+
+[data-sonner-toast][data-type="success"] {
+  border-left-color: hsl(var(--primary)) !important;
+}
+
+[data-sonner-toast][data-type="error"] {
+  border-left-color: hsl(var(--destructive)) !important;
+}
+
+[data-sonner-toast][data-type="warning"] {
+  border-left-color: hsl(var(--warning)) !important;
+}
+
+[data-sonner-toast][data-type="info"] {
+  border-left-color: #3b82f6 !important;
+}
+
+[data-sonner-toast] [data-title] {
+  font-size: 0.875rem !important;
+  font-weight: 600 !important;
+  color: hsl(var(--card-foreground)) !important;
+  line-height: 1.4 !important;
+}
+
+[data-sonner-toast] [data-description] {
+  font-size: 0.75rem !important;
+  color: hsl(var(--muted-foreground)) !important;
+  line-height: 1.5 !important;
+}
+
+[data-sonner-toast] [data-close-button] {
+  /* Move from default top-left-outside to top-right inside the card */
+  position: absolute !important;
+  left: auto !important;
+  right: 10px !important;
+  top: 7px !important;
+  transform: none !important;
+  opacity: 1 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: hsl(var(--muted-foreground)) !important;
+  border-radius: 6px !important;
+  width: 20px !important;
+  height: 20px !important;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease !important;
+}
+
+[data-sonner-toast] [data-close-button]:hover {
+  color: hsl(var(--foreground)) !important;
+  background: hsl(var(--secondary)) !important;
+}
+
+/* Mobile header: sticky top-0, h-14 (56px) inner height + env(safe-area-inset-top) top padding.
+   Sonner v1.7+ uses data-y-position (not data-position) and two separate offset vars:
+     --offset-top       used on viewports > 600px
+     --mobile-offset-top used on viewports ≤ 600px (Sonner's own breakpoint)
+   Override both so toasts always appear below the app header, not in the status-bar area. */
+@media (max-width: 1023px) {
+  [data-sonner-toaster][data-y-position="top"] {
+    --offset-top: calc(env(safe-area-inset-top, 0px) + 24px) !important;
+    --mobile-offset-top: calc(env(safe-area-inset-top, 0px) + 24px) !important;
+  }
+}
