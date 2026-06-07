@@ -192,7 +192,7 @@ function SupportChatView({
 
   if (err)
     return (
-      <div className="flex flex-col items-center justify-center h-full gap-3 text-center py-16">
+      <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center py-16">
         <p className="font-semibold text-gray-600">
           Could not connect to support
         </p>
@@ -207,7 +207,7 @@ function SupportChatView({
 
   if (!chatId)
     return (
-      <div className="flex items-center justify-center h-full">
+      <div className="flex-1 flex items-center justify-center">
         <div className="w-6 h-6 rounded-full border-2 border-primary border-t-transparent animate-spin" />
       </div>
     );
@@ -4743,7 +4743,7 @@ export default function CustomerDashboard() {
         {/* ── Mobile full-screen chat overlay ──────────────────────────── */}
         {isMobileChatOpen && (
           <div
-            className="fixed inset-x-0 top-0 z-[60] bg-[#f2f6f3] overscroll-none"
+            className="fixed inset-x-0 top-0 z-[60] bg-[#f2f6f3] overscroll-none flex flex-col"
             style={{
               bottom: `${keyboardH}px`,
               paddingTop: "env(safe-area-inset-top, 0px)",
