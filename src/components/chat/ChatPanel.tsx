@@ -142,10 +142,22 @@ export function ChatPanel({
     return () => unsub();
   }, [chatId, currentUserId]);
 
-  // ── Scroll ─────────────────────────────────────────────────────────────────
+  // ── Scroll on new messages ────────────────────────────────────────────────
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // ── Keep scroll at bottom when keyboard opens / closes ────────────────────
+  // The messages container shrinks when the overlay height changes; without
+  // this the last message can drift behind the new bottom edge.
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const onResize = () =>
+      requestAnimationFrame(() => messagesEndRef.current?.scrollIntoView());
+    vv.addEventListener("resize", onResize);
+    return () => vv.removeEventListener("resize", onResize);
+  }, []);
 
   // ── Focus on open ──────────────────────────────────────────────────────────
   useEffect(() => {
