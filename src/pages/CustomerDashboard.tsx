@@ -2649,6 +2649,30 @@ export default function CustomerDashboard() {
     return () => vv.removeEventListener("resize", update);
   }, []);
 
+  // Freeze body scroll while the mobile chat overlay is open.
+  // Without this, iOS translates position:fixed overlays upward when the
+  // keyboard appears to "scroll" the focused input into view — causing the
+  // header to disappear off the top and the nav bar to bleed through below.
+  // Locking the body gives iOS nothing to scroll, so the overlay stays put
+  // and the visualViewport height fix above keeps the input visible.
+  useEffect(() => {
+    const chatOpen =
+      (activeChat !== null || activeSupportChat) && activeTab === "messages";
+    if (!chatOpen || window.innerWidth >= 1024) return;
+    const y = window.scrollY;
+    document.body.style.position = "fixed";
+    document.body.style.top = `-${y}px`;
+    document.body.style.left = "0";
+    document.body.style.right = "0";
+    return () => {
+      document.body.style.position = "";
+      document.body.style.top = "";
+      document.body.style.left = "";
+      document.body.style.right = "";
+      window.scrollTo(0, y);
+    };
+  }, [activeChat, activeSupportChat, activeTab]);
+
   // Handlers
   const handleLocationToggle = async (enabled: boolean) => {
     if (enabled) {
