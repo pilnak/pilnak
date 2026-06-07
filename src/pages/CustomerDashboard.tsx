@@ -172,12 +172,14 @@ function SupportChatView({
   onClose,
   flat,
   backButton,
+  keyboardOpen,
 }: {
   userId: string;
   customerName?: string;
   onClose: () => void;
   flat?: boolean;
   backButton?: boolean;
+  keyboardOpen?: boolean;
 }) {
   const [chatId, setChatId] = useState<string | null>(null);
   const [err, setErr] = useState(false);
@@ -222,6 +224,7 @@ function SupportChatView({
       onClose={onClose}
       flat={flat}
       backButton={backButton}
+      keyboardOpen={keyboardOpen}
     />
   );
 }
@@ -2214,13 +2217,9 @@ export default function CustomerDashboard() {
     useState(false);
   const [showNotificationsMobile, setShowNotificationsMobile] = useState(false);
   const [unreadMessages, setUnreadMessages] = useState(0);
-  const [chatOverlayH, setChatOverlayH] = useState(
-    () => window.visualViewport?.height ?? window.innerHeight,
-  );
-  // Captured once at mount — never changes — used to detect keyboard open
-  // on both iOS (innerHeight stays constant) and Android resizes-content
-  // (innerHeight shrinks, but ref still holds the original value).
-  const initialInnerH = useRef(window.innerHeight);
+  // Pixels of screen currently occupied by the on-screen keyboard.
+  // Used to push the chat overlay's bottom edge up above the keyboard.
+  const [keyboardH, setKeyboardH] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredDeliveries, setFilteredDeliveries] = useState<
     DeliveryRequest[]
@@ -2644,13 +2643,20 @@ export default function CustomerDashboard() {
     };
   }, [user?.uid]);
 
-  // Shrink the mobile chat overlay when the on-screen keyboard opens
+  // Track keyboard height so the chat overlay can avoid it.
+  // On iOS: innerHeight is stable; vv.height shrinks → keyboardH = keyboard size.
+  // On Android (resizes-content): innerHeight shrinks too → keyboardH ≈ 0 (browser handles it).
   useEffect(() => {
     const vv = window.visualViewport;
     if (!vv) return;
-    const update = () => setChatOverlayH(vv.height);
+    const update = () =>
+      setKeyboardH(Math.max(0, window.innerHeight - vv.height - vv.offsetTop));
     vv.addEventListener("resize", update);
-    return () => vv.removeEventListener("resize", update);
+    vv.addEventListener("scroll", update);
+    return () => {
+      vv.removeEventListener("resize", update);
+      vv.removeEventListener("scroll", update);
+    };
   }, []);
 
   // Freeze body scroll while the mobile chat overlay is open.
@@ -4276,9 +4282,7 @@ export default function CustomerDashboard() {
   const isMobileChatOpen =
     (activeChat !== null || activeSupportChat) && activeTab === "messages";
   // True when the on-screen keyboard is open (visual viewport shrank by >100 px
-  // relative to the captured initial height). Works on iOS (innerHeight stays
-  // fixed) and Android with resizes-content (initialInnerH ref stays fixed).
-  const mobileKeyboardOpen = chatOverlayH < initialInnerH.current - 100;
+  const mobileKeyboardOpen = keyboardH > 100;
   const mobileChatCustomerName =
     (profile?.firstName
       ? `${profile.firstName}${profile.lastName ? " " + profile.lastName : ""}`
@@ -4741,7 +4745,7 @@ export default function CustomerDashboard() {
           <div
             className="fixed inset-x-0 top-0 z-[60] bg-[#f2f6f3] overscroll-none"
             style={{
-              height: `${chatOverlayH}px`,
+              bottom: `${keyboardH}px`,
               paddingTop: "env(safe-area-inset-top, 0px)",
             }}
           >
@@ -4750,6 +4754,7 @@ export default function CustomerDashboard() {
                 key={activeChat.id}
                 flat
                 backButton
+                keyboardOpen={mobileKeyboardOpen}
                 requestId={activeChat.id}
                 currentUserId={user?.uid ?? ""}
                 senderName={senderName}
@@ -4766,6 +4771,7 @@ export default function CustomerDashboard() {
               <SupportChatView
                 flat
                 backButton
+                keyboardOpen={mobileKeyboardOpen}
                 userId={user?.uid ?? ""}
                 customerName={mobileChatCustomerName}
                 onClose={() => {

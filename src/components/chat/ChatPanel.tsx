@@ -35,6 +35,8 @@ interface ChatPanelProps {
   flat?: boolean;
   /** Shows an ArrowLeft back icon instead of X for the close button */
   backButton?: boolean;
+  /** True when the on-screen keyboard is open — suppresses safe-area-inset-bottom to close the gap */
+  keyboardOpen?: boolean;
 }
 
 interface Message {
@@ -92,6 +94,7 @@ export function ChatPanel({
   onUnreadCountChange,
   flat = false,
   backButton = false,
+  keyboardOpen = false,
 }: ChatPanelProps) {
   const [messages,      setMessages]      = useState<Message[]>([]);
   const [newMessage,    setNewMessage]    = useState("");
@@ -324,7 +327,11 @@ export function ChatPanel({
       {/* ── Input bar ── */}
       <div
         className="px-3 py-3 bg-white border-t border-gray-100 flex-shrink-0"
-        style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom, 0px))" }}
+        style={{
+          paddingBottom: keyboardOpen
+            ? "0.75rem"
+            : "calc(0.75rem + env(safe-area-inset-bottom, 0px))",
+        }}
       >
         <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-full px-4 py-1 focus-within:border-[#028538]/40 focus-within:bg-white transition-colors">
           <input
