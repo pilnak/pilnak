@@ -48,7 +48,6 @@ import {
   addDoc,
 } from "firebase/firestore";
 import { MapView } from "@/components/map/MapView";
-import { LocationPermissionModal } from "@/components/map/LocationPermissionModal";
 import { DeliveryRequestForm } from "@/components/delivery/DeliveryRequestForm";
 import { DeliveryTracking } from "@/components/delivery/DeliveryTracking";
 import { DeliveryNegotiationSection } from "@/components/delivery/DeliveryNegotiationSection";
@@ -719,7 +718,9 @@ function StatCard({
   return (
     <div className="bg-white rounded-xl p-3.5 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
       <div className="flex items-start justify-between mb-2.5">
-        <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${accent}`}>
+        <div
+          className={`h-8 w-8 rounded-lg flex items-center justify-center ${accent}`}
+        >
           <Icon className="h-3.5 w-3.5" />
         </div>
         {trend && (
@@ -811,8 +812,10 @@ function DeliveryCard({
               )}
               <p className="text-[11px] text-gray-400 mt-0.5">
                 {delivery.createdAt?.toDate().toLocaleString([], {
-                  month: "short", day: "numeric",
-                  hour: "2-digit", minute: "2-digit",
+                  month: "short",
+                  day: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
                 })}
               </p>
             </div>
@@ -822,7 +825,9 @@ function DeliveryCard({
                   ₦{Number(price || 0).toLocaleString()}
                 </span>
               ) : (
-                <span className="text-[11px] font-medium text-gray-400">Pending</span>
+                <span className="text-[11px] font-medium text-gray-400">
+                  Pending
+                </span>
               )}
               {showTrack && isActionable && (
                 <div className="flex items-center gap-1.5">
@@ -854,9 +859,14 @@ function DeliveryCard({
               )}
               {isCompleted && delivery.rating && (
                 <div className="flex items-center gap-0.5">
-                  {Array.from({ length: delivery.rating.rating }).map((_, i) => (
-                    <Star key={i} className="h-3 w-3 fill-amber-400 text-amber-400" />
-                  ))}
+                  {Array.from({ length: delivery.rating.rating }).map(
+                    (_, i) => (
+                      <Star
+                        key={i}
+                        className="h-3 w-3 fill-amber-400 text-amber-400"
+                      />
+                    ),
+                  )}
                 </div>
               )}
             </div>
@@ -2038,14 +2048,25 @@ function ReceiptDialog({
             {[
               { label: "Customer", value: name, wrap: false },
               { label: "Date", value: date, wrap: false },
-              { label: "Status", value: delivery.status.replace(/_/g, " "), wrap: false },
+              {
+                label: "Status",
+                value: delivery.status.replace(/_/g, " "),
+                wrap: false,
+              },
               ...(delivery.deliveryName
                 ? [{ label: "Name", value: delivery.deliveryName, wrap: true }]
                 : []),
             ].map(({ label, value, wrap }) => (
-              <div key={label} className={`flex items-baseline gap-4 ${wrap ? "flex-wrap" : "justify-between"}`}>
-                <span className="text-gray-400 flex-shrink-0 text-xs uppercase tracking-wide">{label}</span>
-                <span className={`font-semibold text-gray-900 capitalize text-right flex-1 min-w-0 ${wrap ? "break-words" : "truncate"}`}>
+              <div
+                key={label}
+                className={`flex items-baseline gap-4 ${wrap ? "flex-wrap" : "justify-between"}`}
+              >
+                <span className="text-gray-400 flex-shrink-0 text-xs uppercase tracking-wide">
+                  {label}
+                </span>
+                <span
+                  className={`font-semibold text-gray-900 capitalize text-right flex-1 min-w-0 ${wrap ? "break-words" : "truncate"}`}
+                >
                   {value}
                 </span>
               </div>
@@ -2125,7 +2146,6 @@ export default function CustomerDashboard() {
   // ── Hero booking pre-fill ─────────────────────────────────────────────────
   const [heroBooking, setHeroBooking] = useState<HeroBooking | null>(null);
 
-  const [showLocationModal, setShowLocationModal] = useState(false);
   const [nearbyDrivers, setNearbyDrivers] = useState<Driver[]>([]);
   const [deliveries, setDeliveries] = useState<DeliveryRequest[]>([]);
   const [selectedForRating, setSelectedForRating] =
@@ -2133,7 +2153,9 @@ export default function CustomerDashboard() {
   const [ratingDriverInfo, setRatingDriverInfo] = useState<Driver | null>(null);
   const handleShare = async (delivery: DeliveryRequest) => {
     const mapsUrl = buildGoogleMapsUrl(delivery, null);
-    const label = delivery.deliveryName || `Delivery #${delivery.id.slice(0, 8).toUpperCase()}`;
+    const label =
+      delivery.deliveryName ||
+      `Delivery #${delivery.id.slice(0, 8).toUpperCase()}`;
     const title = `Track ${label} on Pilnak`;
 
     const copyToClipboard = async () => {
@@ -2141,7 +2163,10 @@ export default function CustomerDashboard() {
         await navigator.clipboard.writeText(mapsUrl);
         toast.success("Tracking link copied to clipboard!");
       } catch {
-        toast.info(mapsUrl, { description: "Copy the link above to share", duration: 10000 });
+        toast.info(mapsUrl, {
+          description: "Copy the link above to share",
+          duration: 10000,
+        });
       }
     };
 
@@ -2299,7 +2324,15 @@ export default function CustomerDashboard() {
         setViewMode("new-request");
       }
 
-      if (isPermissionGranted === null) setShowLocationModal(true);
+      if (isPermissionGranted === null) {
+        (async () => {
+          const ok = await requestPermission();
+          if (ok) {
+            startWatching();
+            setLocationEnabled(true);
+          }
+        })();
+      }
     });
     return () => unsub();
   }, [navigate]); // eslint-disable-line
@@ -2367,7 +2400,10 @@ export default function CustomerDashboard() {
     setIsLoadingDriverInfo(true);
 
     (async () => {
-      const results: Record<string, { name: string; driverId: string; photoUrl?: string }> = {};
+      const results: Record<
+        string,
+        { name: string; driverId: string; photoUrl?: string }
+      > = {};
 
       await Promise.all(
         active.map(async (d) => {
@@ -2399,8 +2435,7 @@ export default function CustomerDashboard() {
             const ud = userSnap.data() as any;
             const dd = driverSnap.exists() ? (driverSnap.data() as any) : null;
             const name =
-              [ud.firstName, ud.lastName].filter(Boolean).join(" ") ||
-              "Driver";
+              [ud.firstName, ud.lastName].filter(Boolean).join(" ") || "Driver";
             // Prefer the driver's selfie (uploaded during registration) over
             // the Google OAuth photo, which may be generic or missing.
             const photoUrl: string | undefined =
@@ -2456,7 +2491,8 @@ export default function CustomerDashboard() {
                 ...e,
                 firstName: u.firstName,
                 lastName: u.lastName,
-                photoURL: (e as any).selfieUrl || u.photoURL || (e as any).photoURL,
+                photoURL:
+                  (e as any).selfieUrl || u.photoURL || (e as any).photoURL,
                 phone: u.phone,
               };
             }
@@ -2602,15 +2638,6 @@ export default function CustomerDashboard() {
   }, [user?.uid]);
 
   // Handlers
-  const handleLocationAllow = async () => {
-    setShowLocationModal(false);
-    const ok = await requestPermission();
-    if (ok) {
-      startWatching();
-      setLocationEnabled(true);
-      toast.success("Location enabled");
-    }
-  };
   const handleLocationToggle = async (enabled: boolean) => {
     if (enabled) {
       const ok = await requestPermission();
@@ -2863,8 +2890,8 @@ export default function CustomerDashboard() {
   };
 
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    desktopMainRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    desktopMainRef.current?.scrollTo({ top: 0, behavior: "smooth" });
   }, [activeTab, viewMode]);
 
   const sideNavItems = [
@@ -2971,7 +2998,10 @@ export default function CustomerDashboard() {
                 counterOfferPrice: null,
                 acceptedBroadcastOffer: null,
               };
-              sessionStorage.setItem("pilnak_delivery_form_state", JSON.stringify(resumeState));
+              sessionStorage.setItem(
+                "pilnak_delivery_form_state",
+                JSON.stringify(resumeState),
+              );
             } catch {}
             setSelectedDelivery(null);
             setViewMode("new-request");
@@ -2984,7 +3014,9 @@ export default function CustomerDashboard() {
           <div className="flex items-center justify-between px-5 py-4 border-b border-border">
             <div>
               <h2 className="font-semibold text-base">Company Quote</h2>
-              <p className="text-xs text-muted-foreground mt-0.5">Review and respond to pricing</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Review and respond to pricing
+              </p>
             </div>
           </div>
           <div className="p-5">
@@ -3285,7 +3317,12 @@ export default function CustomerDashboard() {
                   sub: "Get help",
                   icon: MessageCircle,
                   primary: false,
-                  action: () => { setActiveSupportChat(true); setActiveChat(null); setActiveTab("messages"); setViewMode("default"); },
+                  action: () => {
+                    setActiveSupportChat(true);
+                    setActiveChat(null);
+                    setActiveTab("messages");
+                    setViewMode("default");
+                  },
                 },
               ].map((it) => (
                 <button
@@ -3456,8 +3493,15 @@ export default function CustomerDashboard() {
                       setSelectedDelivery(id);
                       const isCompanyNegotiating =
                         d.workflowOwner === "company" &&
-                        ["negotiating_price", "price_set", "payment_pending", "customer_confirmed"].includes(d.status);
-                      setViewMode(isCompanyNegotiating ? "negotiation" : "tracking");
+                        [
+                          "negotiating_price",
+                          "price_set",
+                          "payment_pending",
+                          "customer_confirmed",
+                        ].includes(d.status);
+                      setViewMode(
+                        isCompanyNegotiating ? "negotiation" : "tracking",
+                      );
                     }}
                     onRate={handleOpenRating}
                     onCancel={handleCancel}
@@ -3508,8 +3552,12 @@ export default function CustomerDashboard() {
                 <CheckCircle className="h-3.5 w-3.5 text-emerald-600" />
               </div>
               <div className="min-w-0">
-                <p className="text-base font-bold text-gray-900 leading-none">{deliveryStats.completed}</p>
-                <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mt-0.5">Completed</p>
+                <p className="text-base font-bold text-gray-900 leading-none">
+                  {deliveryStats.completed}
+                </p>
+                <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mt-0.5">
+                  Completed
+                </p>
               </div>
             </div>
             <div className="w-px h-8 bg-gray-100 flex-shrink-0" />
@@ -3518,8 +3566,12 @@ export default function CustomerDashboard() {
                 <XCircle className="h-3.5 w-3.5 text-red-500" />
               </div>
               <div className="min-w-0">
-                <p className="text-base font-bold text-gray-900 leading-none">{deliveryStats.cancelled}</p>
-                <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mt-0.5">Cancelled</p>
+                <p className="text-base font-bold text-gray-900 leading-none">
+                  {deliveryStats.cancelled}
+                </p>
+                <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mt-0.5">
+                  Cancelled
+                </p>
               </div>
             </div>
           </div>
@@ -3862,364 +3914,136 @@ export default function CustomerDashboard() {
         profile?.referralCode || (user?.uid ? makeReferralCode(user.uid) : "–");
       return (
         <div className="space-y-4 animate-fade-in">
-          <div className="flex items-center justify-between">
-            <h1 className="text-xl font-bold text-gray-900">My Profile</h1>
-            <Button
-              variant="outline"
-              size="sm"
-              className="rounded-xl border-gray-200 flex-shrink-0"
-              onClick={() => setIsEditingProfile(!isEditingProfile)}
-            >
-              {isEditingProfile ? (
-                <>
-                  <X className="h-3.5 w-3.5 mr-1.5" />
-                  Cancel
-                </>
-              ) : (
-                <>
-                  <Edit2 className="h-3.5 w-3.5 mr-1.5" />
-                  Edit
-                </>
-              )}
-            </Button>
-          </div>
-          <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
-            <div className="h-16 bg-gradient-to-r from-primary/20 via-primary/10 to-emerald-50" />
-            <div className="px-5 pb-5 -mt-8">
-              <div className="flex items-end gap-4 mb-4">
-                {user?.uid && (
-                  <ProfilePictureUpload
-                    currentUrl={profile?.photoURL}
-                    userId={user.uid}
-                    onUploaded={handleProfilePictureUploaded}
-                  />
-                )}
-                <div className="flex-1 min-w-0 pb-1">
-                  <h2 className="text-lg font-bold text-gray-900 truncate leading-tight">
+
+          {/* ── Hero Identity Card ──────────────────────────────────── */}
+          <div className="rounded-2xl overflow-hidden shadow-md">
+            <div className="relative bg-gradient-to-br from-[#003D1A] via-[#005C25] to-[#008A39] px-5 pt-7 pb-6">
+              {/* Decorative circles */}
+              <div className="pointer-events-none absolute -top-12 -right-12 h-48 w-48 rounded-full bg-white/5" />
+              <div className="pointer-events-none absolute -bottom-10 -left-10 h-36 w-36 rounded-full bg-white/5" />
+              <div className="pointer-events-none absolute top-4 right-16 h-20 w-20 rounded-full bg-white/[0.03]" />
+
+              {/* Avatar + name */}
+              <div className="relative flex items-center gap-4">
+                <div className="relative flex-shrink-0">
+                  <div className="h-[76px] w-[76px] rounded-full p-[3px] bg-white/20">
+                    <Avatar className="h-full w-full rounded-full">
+                      <AvatarImage src={profile?.photoURL} className="object-cover rounded-full" />
+                      <AvatarFallback className="rounded-full bg-white/25 text-white text-2xl font-bold">
+                        {profile?.firstName?.[0]}{profile?.lastName?.[0]}
+                      </AvatarFallback>
+                    </Avatar>
+                  </div>
+                  <span className="absolute bottom-0.5 right-0.5 h-4 w-4 rounded-full bg-emerald-400 border-2 border-white shadow-sm" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-[20px] font-bold text-white leading-tight truncate tracking-tight">
                     {profile?.firstName} {profile?.lastName}
                   </h2>
-                  <p className="text-xs text-gray-400 truncate">
-                    {profile?.email}
-                  </p>
-                  <span className="inline-flex items-center gap-1 mt-1.5 text-[11px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                    Active Customer
-                  </span>
+                  <p className="text-xs text-white/50 truncate mt-0.5">{profile?.email}</p>
+                  <div className="flex items-center gap-2 mt-2.5 flex-wrap">
+                    <span className="inline-flex items-center gap-1.5 text-[10px] font-bold text-[#003D1A] bg-emerald-300 px-2.5 py-0.5 rounded-full">
+                      <span className="w-1 h-1 rounded-full bg-[#003D1A]" />
+                      Active Customer
+                    </span>
+                    {profile?.createdAt && (
+                      <span className="text-[10px] text-white/35 font-medium">
+                        Since {profile.createdAt.toDate().toLocaleDateString("en-GB", { month: "short", year: "numeric" })}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
-              {isEditingProfile ? (
-                <div className="space-y-3">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <Label className="text-xs font-medium text-gray-400">
-                        First Name
-                      </Label>
-                      <Input
-                        value={editForm.firstName || ""}
-                        onChange={(e) =>
-                          setEditForm({
-                            ...editForm,
-                            firstName: e.target.value,
-                          })
-                        }
-                        className="mt-1 rounded-xl border-gray-200 h-10"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-xs font-medium text-gray-400">
-                        Last Name
-                      </Label>
-                      <Input
-                        value={editForm.lastName || ""}
-                        onChange={(e) =>
-                          setEditForm({ ...editForm, lastName: e.target.value })
-                        }
-                        className="mt-1 rounded-xl border-gray-200 h-10"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <Label className="text-xs font-medium text-gray-400">
-                      Phone Number
-                    </Label>
-                    <Input
-                      value={editForm.phone || ""}
-                      onChange={(e) =>
-                        setEditForm({ ...editForm, phone: e.target.value })
-                      }
-                      className="mt-1 rounded-xl border-gray-200 h-10"
-                      placeholder="+234..."
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-xs font-medium text-gray-400">
-                      Home Address
-                    </Label>
-                    <Input
-                      value={editForm.address || ""}
-                      onChange={(e) =>
-                        setEditForm({ ...editForm, address: e.target.value })
-                      }
-                      className="mt-1 rounded-xl border-gray-200 h-10"
-                    />
-                  </div>
-                  <Button
-                    onClick={handleUpdateProfile}
-                    className="w-full rounded-xl shadow-sm shadow-primary/20 h-11 font-semibold"
+
+              {/* Stats row */}
+              <div className="relative grid grid-cols-3 gap-2 mt-6">
+                {[
+                  { label: "Total", value: deliveryStats.total },
+                  { label: "Completed", value: deliveryStats.completed },
+                  { label: "Spent", value: `₦${(deliveryStats.totalSpent / 1000).toFixed(0)}k` },
+                ].map((s) => (
+                  <div
+                    key={s.label}
+                    className="bg-white/10 border border-white/10 rounded-xl py-3 px-2 text-center"
                   >
-                    Save Changes
-                  </Button>
+                    <p className="text-lg font-bold text-white leading-none">{s.value}</p>
+                    <p className="text-[9px] text-white/45 font-semibold uppercase tracking-widest mt-1">{s.label}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Contact details — same card, white section */}
+            <div className="bg-white divide-y divide-gray-50">
+              {[
+                { icon: Phone, label: "Phone", value: profile?.phone || "Not set" },
+                { icon: Mail, label: "Email", value: profile?.email || "—" },
+              ].map((item) => (
+                <div key={item.label} className="flex items-center gap-4 px-5 py-3.5">
+                  <div className="h-8 w-8 rounded-lg bg-gray-50 border border-gray-100 flex items-center justify-center flex-shrink-0">
+                    <item.icon className="h-3.5 w-3.5 text-gray-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">{item.label}</p>
+                    <p className="font-semibold text-sm text-gray-900 truncate mt-0.5">{item.value}</p>
+                  </div>
                 </div>
-              ) : (
-                <>
-                  <div className="grid grid-cols-2 gap-3 mb-4">
-                    {[
-                      { label: "Phone", value: profile?.phone || "Not set" },
-                      { label: "Email", value: profile?.email || "" },
-                    ].map((item) => (
-                      <div
-                        key={item.label}
-                        className="bg-gray-50 rounded-xl p-3 min-w-0"
-                      >
-                        <p className="text-[10px] font-medium text-gray-400 mb-1 uppercase tracking-wider">
-                          {item.label}
-                        </p>
-                        <p className="font-semibold text-sm text-gray-800 truncate">
-                          {item.value}
-                        </p>
-                      </div>
-                    ))}
-                    <div className="col-span-2 bg-gray-50 rounded-xl p-3 min-w-0">
-                      <p className="text-[10px] font-medium text-gray-400 mb-1 uppercase tracking-wider">
-                        Address
-                      </p>
-                      <p className="font-semibold text-sm text-gray-800 truncate">
-                        {profile?.address || "Not set"}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2 text-center">
-                    {[
-                      {
-                        label: "Total",
-                        value: deliveryStats.total,
-                        cls: "text-primary",
-                        bg: "bg-primary/5 border-primary/10",
-                      },
-                      {
-                        label: "Done",
-                        value: deliveryStats.completed,
-                        cls: "text-emerald-600",
-                        bg: "bg-emerald-50 border-emerald-100",
-                      },
-                      {
-                        label: "Spent",
-                        value: `₦${(deliveryStats.totalSpent / 1000).toFixed(0)}k`,
-                        cls: "text-violet-600",
-                        bg: "bg-violet-50 border-violet-100",
-                      },
-                    ].map((s) => (
-                      <div
-                        key={s.label}
-                        className={`${s.bg} rounded-lg py-2.5 border`}
-                      >
-                        <p className={`text-base font-bold ${s.cls}`}>
-                          {s.value}
-                        </p>
-                        <p className="text-[10px] text-gray-400 mt-0.5 font-medium">
-                          {s.label}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              )}
+              ))}
             </div>
           </div>
 
+          {/* ── Notifications & Alerts ─────────────────────────────── */}
           <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
-            <div className="px-5 py-4 border-b border-gray-50 flex items-center gap-2">
-              <Gift className="h-4 w-4 text-violet-500" />
-              <h2 className="font-semibold text-gray-900 text-sm">
-                Referral Code
-              </h2>
-            </div>
-            <div className="px-5 py-4 space-y-3">
-              <p className="text-xs text-gray-400">
-                Share your code with friends. Both of you get delivery credits
-                when they complete their first delivery.
-              </p>
-              <div className="flex items-center gap-3 bg-violet-50 border border-violet-200 rounded-xl px-4 py-3">
-                <span className="flex-1 text-lg font-bold text-violet-700 tracking-widest font-mono">
-                  {referralCode}
-                </span>
-                <button
-                  onClick={() => {
-                    navigator.clipboard.writeText(referralCode);
-                    toast.success("Referral code copied!");
-                  }}
-                  className="h-8 w-8 rounded-lg flex items-center justify-center text-violet-500 hover:bg-violet-100 transition-colors"
-                >
-                  <Copy className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => {
-                    if (navigator.share)
-                      navigator.share({
-                        title: "Join Pilnak!",
-                        text: `Use my code ${referralCode} on Pilnak for delivery credits!`,
-                        url: window.location.origin,
-                      });
-                    else {
-                      navigator.clipboard.writeText(
-                        `Use my code ${referralCode} on Pilnak!`,
-                      );
-                      toast.success("Copied!");
-                    }
-                  }}
-                  className="h-8 w-8 rounded-lg flex items-center justify-center text-violet-500 hover:bg-violet-100 transition-colors"
-                >
-                  <Share2 className="h-4 w-4" />
-                </button>
+            <div className="px-5 py-4 border-b border-gray-50 flex items-center gap-2.5">
+              <div className="h-7 w-7 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
+                <BellRing className="h-3.5 w-3.5 text-blue-500" />
               </div>
-            </div>
-          </div>
-
-          <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
-            <div className="px-5 py-4 border-b border-gray-50 flex items-center gap-2">
-              <Shield className="h-4 w-4 text-red-500" />
-              <h2 className="font-semibold text-gray-900 text-sm">
-                Safety & Booking
-              </h2>
-            </div>
-            <div className="px-5 py-4 space-y-4">
-              <div className="space-y-2">
-                <Label className="text-xs font-semibold text-gray-500 flex items-center gap-1.5">
-                  <PhoneCall className="h-3.5 w-3.5 text-red-400" />
-                  Emergency Contact Name
-                </Label>
-                <Input
-                  value={emergencyName}
-                  onChange={(e) => setEmergencyName(e.target.value)}
-                  placeholder="e.g. Mum, John Doe"
-                  className="rounded-xl border-gray-200 h-10 text-sm"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-xs font-semibold text-gray-500">
-                  Emergency Phone Number
-                </Label>
-                <Input
-                  value={emergencyContact}
-                  onChange={(e) => setEmergencyContact(e.target.value)}
-                  placeholder="+234..."
-                  className="rounded-xl border-gray-200 h-10"
-                  type="tel"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-xs font-semibold text-gray-500 flex items-center gap-1.5">
-                  <MapPinned className="h-3.5 w-3.5 text-primary" />
-                  Preferred Pickup Address
-                </Label>
-                <Input
-                  value={preferredPickup}
-                  onChange={(e) => setPreferredPickup(e.target.value)}
-                  placeholder="e.g. 12 Broad Street, Lagos"
-                  className="rounded-xl border-gray-200 h-10 text-sm"
-                />
-                <p className="text-[10px] text-gray-400">
-                  Pre-fills in new delivery requests for faster booking.
-                </p>
-              </div>
-              <Button
-                onClick={handleSavePrefs}
-                disabled={savingPrefs}
-                className="w-full rounded-xl h-10 font-semibold text-sm shadow-sm shadow-primary/20"
-              >
-                {savingPrefs ? "Saving…" : "Save Preferences"}
-              </Button>
-            </div>
-          </div>
-
-          <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
-            <div className="px-5 py-4 border-b border-gray-50 flex items-center gap-2">
-              <BellRing className="h-4 w-4 text-blue-500" />
-              <h2 className="font-semibold text-gray-900 text-sm">
-                Notifications & Alerts
-              </h2>
+              <h2 className="font-bold text-gray-900 text-sm">Notifications & Alerts</h2>
             </div>
             <div className="divide-y divide-gray-50">
-              {/* Push notifications — async permission request handled separately */}
-              <div className="flex items-center gap-3 px-5 py-4">
+              <div className="flex items-center gap-3.5 px-5 py-4">
                 <div className="h-9 w-9 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
                   <BellRing className="h-4 w-4 text-blue-500" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-sm text-gray-800">
-                    Push Notifications
-                  </p>
-                  <p className="text-xs text-gray-400">
-                    Browser alerts when you receive updates
-                  </p>
+                  <p className="font-semibold text-sm text-gray-800">Push Notifications</p>
+                  <p className="text-xs text-gray-400 mt-0.5">Browser alerts when you receive updates</p>
                 </div>
                 <Switch
                   checked={pushNotifications}
                   onCheckedChange={async (v) => {
                     await handlePushNotificationsToggle(v);
-                    // handlePushNotificationsToggle sets state; save after it resolves
                     setTimeout(handleSavePrefs, 0);
                   }}
                   className="flex-shrink-0"
                 />
               </div>
               {[
-                {
-                  label: "Sound Alerts",
-                  sub: "Play sound on status change",
-                  icon: Volume2,
-                  value: notificationSound,
-                  set: setNotificationSound,
-                },
-                {
-                  label: "Vibration",
-                  sub: "Vibrate on status change",
-                  icon: Vibrate,
-                  value: notificationVibration,
-                  set: setNotificationVibration,
-                },
+                { label: "Sound Alerts", sub: "Play sound on status change", icon: Volume2, value: notificationSound, set: setNotificationSound },
+                { label: "Vibration", sub: "Vibrate on status change", icon: Vibrate, value: notificationVibration, set: setNotificationVibration },
               ].map((item) => (
-                <div
-                  key={item.label}
-                  className="flex items-center gap-3 px-5 py-4"
-                >
+                <div key={item.label} className="flex items-center gap-3.5 px-5 py-4">
                   <div className="h-9 w-9 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
                     <item.icon className="h-4 w-4 text-blue-500" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-sm text-gray-800">
-                      {item.label}
-                    </p>
-                    <p className="text-xs text-gray-400">{item.sub}</p>
+                    <p className="font-semibold text-sm text-gray-800">{item.label}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">{item.sub}</p>
                   </div>
                   <Switch
                     checked={item.value}
-                    onCheckedChange={(v) => {
-                      item.set(v);
-                      setTimeout(handleSavePrefs, 0);
-                    }}
+                    onCheckedChange={(v) => { item.set(v); setTimeout(handleSavePrefs, 0); }}
                     className="flex-shrink-0"
                   />
                 </div>
               ))}
-              <div className="px-5 py-4 space-y-2">
-                <Label className="text-xs font-semibold text-gray-500 flex items-center gap-1.5">
-                  <MessageSquare className="h-3.5 w-3.5 text-green-500" />
-                  SMS Alert Number
-                </Label>
-                <p className="text-[10px] text-gray-400">
-                  Send delivery updates to a different number (e.g. the
-                  recipient).
+              <div className="px-5 py-4 space-y-2.5">
+                <div className="flex items-center gap-1.5 mb-0.5">
+                  <MessageSquare className="h-3.5 w-3.5 text-green-500 flex-shrink-0" />
+                  <Label className="text-xs font-semibold text-gray-700">SMS Alert Number</Label>
+                </div>
+                <p className="text-[10px] text-gray-400 leading-relaxed">
+                  Send delivery updates to a different number (e.g. the recipient).
                 </p>
                 <div className="flex gap-2">
                   <Input
@@ -4240,79 +4064,57 @@ export default function CustomerDashboard() {
                   </Button>
                 </div>
               </div>
-              <div className="flex items-center justify-between px-5 py-4 min-w-0">
-                <div className="flex items-center gap-3 min-w-0 mr-3">
-                  <div
-                    className={`h-9 w-9 rounded-xl flex items-center justify-center flex-shrink-0 ${locationEnabled ? "bg-emerald-50" : "bg-gray-50"}`}
-                  >
-                    <MapPinned
-                      className={`h-4 w-4 ${locationEnabled ? "text-emerald-600" : "text-gray-400"}`}
-                    />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="font-semibold text-sm text-gray-800">
-                      Location Access
-                    </p>
-                    <p className="text-xs text-gray-400">
-                      {locationEnabled
-                        ? "Active — used for driver matching"
-                        : "Enable for faster driver matching"}
-                    </p>
-                  </div>
+              <div className="flex items-center gap-3.5 px-5 py-4">
+                <div className={`h-9 w-9 rounded-xl flex items-center justify-center flex-shrink-0 ${locationEnabled ? "bg-emerald-50" : "bg-gray-50"}`}>
+                  <MapPinned className={`h-4 w-4 ${locationEnabled ? "text-emerald-600" : "text-gray-400"}`} />
                 </div>
-                <Switch
-                  checked={locationEnabled}
-                  onCheckedChange={handleLocationToggle}
-                  className="flex-shrink-0"
-                />
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-sm text-gray-800">Location Access</p>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {locationEnabled ? "Active — used for driver matching" : "Enable for faster driver matching"}
+                  </p>
+                </div>
+                <Switch checked={locationEnabled} onCheckedChange={handleLocationToggle} className="flex-shrink-0" />
               </div>
             </div>
           </div>
 
+          {/* ── Account ───────────────────────────────────────────────── */}
           <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
-            <div className="px-5 py-4 border-b border-gray-50">
-              <h2 className="font-semibold text-gray-900 text-sm">Account</h2>
+            <div className="px-5 py-4 border-b border-gray-50 flex items-center gap-2.5">
+              <div className="h-7 w-7 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+                <User className="h-3.5 w-3.5 text-gray-500" />
+              </div>
+              <h2 className="font-bold text-gray-900 text-sm">Account</h2>
             </div>
             <div className="divide-y divide-gray-50">
               {[
-                {
-                  label: "Help & Support",
-                  icon: HelpCircle,
-                  action: () => switchTab("support"),
-                  color: "text-gray-600",
-                },
-                {
-                  label: "Delivery History",
-                  icon: History,
-                  action: () => switchTab("history"),
-                  color: "text-gray-600",
-                },
+                { label: "Help & Support", icon: HelpCircle, action: () => switchTab("support"), iconBg: "bg-violet-50", iconCls: "text-violet-500" },
+                { label: "Delivery History", icon: History, action: () => switchTab("history"), iconBg: "bg-amber-50", iconCls: "text-amber-500" },
               ].map((item) => (
                 <button
                   key={item.label}
                   onClick={item.action}
-                  className="w-full flex items-center gap-3 px-5 py-4 hover:bg-gray-50 transition-colors text-left min-w-0"
+                  className="w-full flex items-center gap-3.5 px-5 py-4 hover:bg-gray-50/80 active:bg-gray-100 transition-colors text-left min-w-0"
                 >
-                  <item.icon
-                    className={`h-4 w-4 flex-shrink-0 ${item.color}`}
-                  />
-                  <span className="flex-1 text-sm font-semibold text-gray-700">
-                    {item.label}
-                  </span>
+                  <div className={`h-9 w-9 rounded-xl flex items-center justify-center flex-shrink-0 ${item.iconBg}`}>
+                    <item.icon className={`h-4 w-4 ${item.iconCls}`} />
+                  </div>
+                  <span className="flex-1 text-sm font-semibold text-gray-800">{item.label}</span>
                   <ChevronRight className="h-4 w-4 text-gray-300 flex-shrink-0" />
                 </button>
               ))}
             </div>
           </div>
 
-          <Button
-            variant="outline"
-            className="w-full rounded-xl border-red-100 text-red-500 hover:bg-red-50 hover:border-red-200 h-12 font-semibold"
+          {/* ── Sign Out ──────────────────────────────────────────────── */}
+          <button
             onClick={handleLogout}
+            className="w-full flex items-center justify-center gap-2.5 rounded-2xl border border-red-100 bg-white text-red-500 hover:bg-red-50 hover:border-red-200 active:scale-[0.98] h-12 font-semibold text-sm transition-all shadow-sm"
           >
-            <LogOut className="h-4 w-4 mr-2" />
+            <LogOut className="h-4 w-4" />
             Sign Out
-          </Button>
+          </button>
         </div>
       );
     }
@@ -4325,7 +4127,12 @@ export default function CustomerDashboard() {
 
           {/* Live chat with support team */}
           <button
-            onClick={() => { setActiveSupportChat(true); setActiveChat(null); setActiveTab("messages"); setViewMode("default"); }}
+            onClick={() => {
+              setActiveSupportChat(true);
+              setActiveChat(null);
+              setActiveTab("messages");
+              setViewMode("default");
+            }}
             className="w-full bg-primary/5 border border-primary/20 rounded-2xl p-5 flex items-center gap-4 hover:bg-primary/10 transition-colors text-left"
           >
             <div className="h-12 w-12 bg-primary rounded-2xl flex items-center justify-center flex-shrink-0">
@@ -4426,7 +4233,8 @@ export default function CustomerDashboard() {
   // ── Render ────────────────────────────────────────────────────────────────
 
   // Computed values for the mobile full-screen chat overlay
-  const isMobileChatOpen = (activeChat !== null || activeSupportChat) && activeTab === "messages";
+  const isMobileChatOpen =
+    (activeChat !== null || activeSupportChat) && activeTab === "messages";
   const mobileChatCustomerName =
     (profile?.firstName
       ? `${profile.firstName}${profile.lastName ? " " + profile.lastName : ""}`
@@ -4444,11 +4252,6 @@ export default function CustomerDashboard() {
 
   return (
     <div className="min-h-[100dvh] bg-[#f7f8fa]">
-      <LocationPermissionModal
-        isOpen={showLocationModal}
-        onAllow={handleLocationAllow}
-        onDeny={() => setShowLocationModal(false)}
-      />
       {activeCall && (
         <VoiceCall
           currentUserId={user?.uid}
@@ -4491,16 +4294,8 @@ export default function CustomerDashboard() {
         <aside className="w-64 bg-[#008A39] flex flex-col flex-shrink-0">
           <div className="px-5 py-4 border-b border-white/10">
             <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-white/15 shrink-0">
-                <Logo size="sm" className="text-white" showText={false} />
-              </div>
               <div className="flex flex-col leading-none gap-[5px]">
-                <span
-                  className="text-[19px] font-bold text-white tracking-tight"
-                  style={{ fontFamily: "'DM Sans', sans-serif" }}
-                >
-                  Pilnak
-                </span>
+                <Logo size="md" className="text-white" />
                 <span
                   className="text-[9px] font-semibold uppercase text-white/45 tracking-widest"
                   style={{
@@ -4557,16 +4352,7 @@ export default function CustomerDashboard() {
         </aside>
 
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-          <header className="bg-white border-b border-gray-100 px-8 h-16 flex items-center justify-between gap-4 flex-shrink-0">
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-300" />
-              <Input
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search deliveries..."
-                className="pl-9 rounded-xl bg-gray-50 border-gray-100 focus-visible:ring-primary/30"
-              />
-            </div>
+          <header className="bg-white border-b border-gray-100 px-8 h-16 flex items-center justify-end gap-4 flex-shrink-0">
             <div className="flex items-center gap-2">
               <DropdownMenu
                 open={showNotificationsDesktop}
@@ -4671,9 +4457,7 @@ export default function CustomerDashboard() {
                 </div>
                 {/* Content */}
                 <div className="flex-1 overflow-y-auto bg-[#f7f8fa]">
-                  <div className="py-8 px-8">
-                    {renderTabContent()}
-                  </div>
+                  <div className="py-8 px-8">{renderTabContent()}</div>
                 </div>
               </div>
             ) : (
@@ -4692,7 +4476,14 @@ export default function CustomerDashboard() {
           style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
         >
           <div className="px-4 h-14 flex items-center justify-between gap-2 min-w-0">
-            <Logo size="sm" />
+            <Logo
+              size="sm"
+              iconWrapperClassName="bg-black rounded-full"
+              iconClassName="text-[#008A39]" // ✅ square brackets
+              textClassName="text-[#008A39]" // ✅ square brackets
+              accentClassName="text-red-400 not-italic" // ✅ now works, inline style removed
+              className="opacity-80 hover:opacity-100 transition-opacity"
+            />
             <div className="flex items-center gap-1.5 flex-shrink-0">
               <DropdownMenu
                 open={showNotificationsMobile}
@@ -4815,22 +4606,13 @@ export default function CustomerDashboard() {
               </DropdownMenu>
             </div>
           </div>
-          <div className="px-4 pb-3">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-300" />
-              <Input
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search deliveries..."
-                className="pl-9 rounded-xl bg-gray-50 border-gray-100 focus-visible:ring-primary/30 h-9"
-              />
-            </div>
-          </div>
         </header>
 
         <main
           className="px-4 py-4 min-h-[calc(100dvh-112px)]"
-          style={{ paddingBottom: "calc(5rem + env(safe-area-inset-bottom, 0px))" }}
+          style={{
+            paddingBottom: "calc(5rem + env(safe-area-inset-bottom, 0px))",
+          }}
         >
           {renderTabContent()}
         </main>
@@ -4899,9 +4681,7 @@ export default function CustomerDashboard() {
             </div>
             {/* Content */}
             <div className="flex-1 overflow-y-auto">
-              <div className="py-4 px-4">
-                {renderTabContent()}
-              </div>
+              <div className="py-4 px-4">{renderTabContent()}</div>
             </div>
           </div>
         )}
