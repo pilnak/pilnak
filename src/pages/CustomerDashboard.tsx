@@ -2214,6 +2214,9 @@ export default function CustomerDashboard() {
     useState(false);
   const [showNotificationsMobile, setShowNotificationsMobile] = useState(false);
   const [unreadMessages, setUnreadMessages] = useState(0);
+  const [chatOverlayH, setChatOverlayH] = useState(
+    () => window.visualViewport?.height ?? window.innerHeight,
+  );
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredDeliveries, setFilteredDeliveries] = useState<
     DeliveryRequest[]
@@ -2636,6 +2639,15 @@ export default function CustomerDashboard() {
       msgUnsubs.forEach((u) => u());
     };
   }, [user?.uid]);
+
+  // Shrink the mobile chat overlay when the on-screen keyboard opens
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const update = () => setChatOverlayH(vv.height);
+    vv.addEventListener("resize", update);
+    return () => vv.removeEventListener("resize", update);
+  }, []);
 
   // Handlers
   const handleLocationToggle = async (enabled: boolean) => {
@@ -4689,8 +4701,11 @@ export default function CustomerDashboard() {
         {/* ── Mobile full-screen chat overlay ──────────────────────────── */}
         {isMobileChatOpen && (
           <div
-            className="fixed inset-0 z-[60] flex flex-col bg-white overscroll-none"
-            style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
+            className="fixed inset-x-0 top-0 z-[60] bg-[#f2f6f3] overscroll-none"
+            style={{
+              height: `${chatOverlayH}px`,
+              paddingTop: "env(safe-area-inset-top, 0px)",
+            }}
           >
             {activeChat ? (
               <ChatPanel

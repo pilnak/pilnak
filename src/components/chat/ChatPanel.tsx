@@ -187,7 +187,7 @@ export function ChatPanel({
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div className={`flex flex-col h-full overflow-hidden${flat ? " bg-[#f2f6f3]" : " bg-[#f2f6f3] rounded-2xl border border-gray-100 shadow-xl"}`}>
+    <div className={`flex flex-col overflow-hidden${flat ? " flex-1 min-h-0 h-full bg-[#f2f6f3]" : " h-full bg-[#f2f6f3] rounded-2xl border border-gray-100 shadow-xl"}`}>
 
       {/* ── Header ── */}
       <div className="flex items-center justify-between px-4 py-3.5 bg-white border-b border-gray-100 flex-shrink-0">
@@ -322,7 +322,8 @@ export function ChatPanel({
             onKeyDown={handleKeyDown}
             placeholder={`Message ${otherUserName}…`}
             disabled={isInitialising}
-            className="flex-1 bg-transparent text-sm text-gray-800 placeholder:text-gray-400 outline-none py-2 min-w-0"
+            className="flex-1 bg-transparent text-base text-gray-800 placeholder:text-gray-400 outline-none py-2 min-w-0"
+            style={{ touchAction: "manipulation" }}
           />
           <button
             onClick={handleSend}
