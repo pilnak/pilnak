@@ -2217,6 +2217,10 @@ export default function CustomerDashboard() {
   const [chatOverlayH, setChatOverlayH] = useState(
     () => window.visualViewport?.height ?? window.innerHeight,
   );
+  // Captured once at mount — never changes — used to detect keyboard open
+  // on both iOS (innerHeight stays constant) and Android resizes-content
+  // (innerHeight shrinks, but ref still holds the original value).
+  const initialInnerH = useRef(window.innerHeight);
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredDeliveries, setFilteredDeliveries] = useState<
     DeliveryRequest[]
@@ -4271,6 +4275,10 @@ export default function CustomerDashboard() {
   // Computed values for the mobile full-screen chat overlay
   const isMobileChatOpen =
     (activeChat !== null || activeSupportChat) && activeTab === "messages";
+  // True when the on-screen keyboard is open (visual viewport shrank by >100 px
+  // relative to the captured initial height). Works on iOS (innerHeight stays
+  // fixed) and Android with resizes-content (initialInnerH ref stays fixed).
+  const mobileKeyboardOpen = chatOverlayH < initialInnerH.current - 100;
   const mobileChatCustomerName =
     (profile?.firstName
       ? `${profile.firstName}${profile.lastName ? " " + profile.lastName : ""}`
@@ -4654,8 +4662,14 @@ export default function CustomerDashboard() {
         </main>
 
         <nav
-          className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-gray-100"
-          style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+          className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-gray-100 transition-transform duration-200 ease-out"
+          style={{
+            paddingBottom: "env(safe-area-inset-bottom, 0px)",
+            transform:
+              isMobileChatOpen && mobileKeyboardOpen
+                ? "translateY(100%)"
+                : "translateY(0)",
+          }}
         >
           <div className="flex items-center justify-around h-[60px] px-1">
             {bottomNav.map((tab) => {
