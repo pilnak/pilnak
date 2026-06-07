@@ -2365,16 +2365,6 @@ export default function DriverDashboard() {
   const HomeScreen = () => (
     <div className="space-y-0">
       <div className="bg-white px-4 pt-4 pb-3">
-        {/* Search */}
-        <div className="flex items-center gap-2.5 bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3">
-          <Search className="w-4 h-4 text-gray-300 flex-shrink-0" />
-          <input
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search deliveries..."
-            className="flex-1 text-sm text-gray-700 bg-transparent focus:outline-none placeholder-gray-300"
-          />
-        </div>
         {/* Greeting */}
         <div className="mt-4 mb-3">
           <p className="text-xs text-gray-400 font-medium">{today}</p>
@@ -2594,149 +2584,7 @@ export default function DriverDashboard() {
   );
 
   const JobsScreen = () => {
-    // Full-screen tracking view for a tapped active job
-    if (trackingJobId) {
-      const trackedJob = activeJobs.find((a) => a.id === trackingJobId);
-      if (trackedJob) {
-        const req = trackedJob.request;
-        const status = req?.status ?? "";
-        const price = getJobPrice(req);
-        const customerName = [trackedJob.customer?.firstName, trackedJob.customer?.lastName].filter(Boolean).join(" ");
-        const statusLabel =
-          status === "in_progress" ? "In Progress" :
-          status === "driver_accepted" ? "Accepted" :
-          status === "arrived" ? "Arrived" :
-          status === "customer_confirmed" ? "Confirmed" :
-          status.replace(/_/g, " ");
-        const statusColor =
-          status === "in_progress" ? "bg-blue-100 text-blue-700" :
-          status === "driver_accepted" ? "bg-green-100 text-green-700" :
-          status === "arrived" ? "bg-amber-100 text-amber-700" :
-          "bg-gray-100 text-gray-600";
 
-        // Desktop map data — mirrors JobCard's own computation
-        const deskRouteFrom: [number, number] | undefined = latitude && longitude ? [latitude, longitude] : undefined;
-        const deskRouteTo: [number, number] | undefined = (() => {
-          if (status === "in_progress" && req?.dropoff?.lat) return [req.dropoff.lat, req.dropoff.lng];
-          if (["driver_accepted", "customer_confirmed", "arrived"].includes(status) && req?.pickup?.lat)
-            return [req.pickup.lat, req.pickup.lng];
-        })();
-        const deskMarkers: any[] = [];
-        if (latitude && longitude) deskMarkers.push({ id: "me", latitude, longitude, type: "user" as const, label: "You" });
-        if (req?.pickup?.lat) deskMarkers.push({ id: "pu", latitude: req.pickup.lat, longitude: req.pickup.lng, type: "pickup" as const, label: "Pickup" });
-        if (req?.dropoff?.lat && ["in_progress", "arrived"].includes(status))
-          deskMarkers.push({ id: "do", latitude: req.dropoff.lat, longitude: req.dropoff.lng, type: "dropoff" as const, label: "Drop-off" });
-        const showDeskMap = !!deskRouteFrom && !!deskRouteTo && ["driver_accepted", "customer_confirmed", "arrived", "in_progress"].includes(status);
-        const deskExternalUrl = deskRouteFrom && deskRouteTo
-          ? `https://www.google.com/maps/dir/?api=1&origin=${deskRouteFrom[0]},${deskRouteFrom[1]}&destination=${deskRouteTo[0]},${deskRouteTo[1]}&travelmode=driving`
-          : null;
-
-        return (
-          <div>
-            {/* ── Mobile: sticky header + single-column card ── */}
-            <div className="lg:hidden">
-              <div className="flex items-center gap-3 px-4 pt-4 pb-3 border-b border-gray-100 bg-white sticky top-0 z-10">
-                <button
-                  onClick={() => setTrackingJobId(null)}
-                  className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0"
-                >
-                  <ChevronLeft className="w-4 h-4 text-gray-700" />
-                </button>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold text-gray-900 truncate">
-                    {customerName ? `${customerName} Delivery` : "Delivery"}
-                  </p>
-                  <p className="text-xs text-gray-400">₦{price.toLocaleString()}</p>
-                </div>
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${statusColor}`}>
-                  {statusLabel}
-                </span>
-              </div>
-              <div className="px-4 pt-4 pb-6">
-                {JobCard({ a: trackedJob, hideHeader: true })}
-              </div>
-            </div>
-
-            {/* ── Desktop: two-column layout ── */}
-            <div className="hidden lg:grid lg:grid-cols-2 lg:gap-6">
-              {/* Left: full-height sticky map */}
-              <div
-                className="sticky top-6 rounded-2xl overflow-hidden border border-gray-100 shadow-sm bg-white flex flex-col"
-                style={{ height: "calc(100vh - 96px)" }}
-              >
-                {/* Map column header */}
-                <div className="flex items-center gap-3 px-4 py-3.5 border-b border-gray-100 flex-shrink-0">
-                  <button
-                    onClick={() => setTrackingJobId(null)}
-                    className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0"
-                  >
-                    <ChevronLeft className="w-4 h-4 text-gray-700" />
-                  </button>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-gray-900 truncate">
-                      {customerName ? `${customerName} Delivery` : "Delivery"}
-                    </p>
-                    <p className="text-xs text-gray-400">₦{price.toLocaleString()}</p>
-                  </div>
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${statusColor}`}>
-                    {statusLabel}
-                  </span>
-                </div>
-                {/* Map fills remaining column height */}
-                <div className="flex-1 relative min-h-0">
-                  {showDeskMap ? (
-                    <>
-                      <MapView
-                        className="h-full w-full"
-                        markers={deskMarkers}
-                        userLatitude={latitude}
-                        userLongitude={longitude}
-                        routeFrom={deskRouteFrom}
-                        routeTo={deskRouteTo}
-                        showUserLocation={false}
-                        hideExternalLink
-                      />
-                      {deskExternalUrl && (
-                        <a
-                          href={deskExternalUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="absolute bottom-4 right-4 z-[1000] flex items-center gap-1.5 bg-white text-gray-700 text-xs font-bold px-3 py-2 rounded-full shadow-md border border-gray-100"
-                        >
-                          <svg width="12" height="12" viewBox="0 0 48 48" fill="none">
-                            <path d="M24 4C15.163 4 8 11.163 8 20c0 12 16 28 16 28s16-16 16-28c0-8.837-7.163-16-16-16z" fill="#EA4335" />
-                            <circle cx="24" cy="20" r="6" fill="white" />
-                          </svg>
-                          Open in Google Maps
-                        </a>
-                      )}
-                      <div className="absolute top-4 left-4 z-[1000] bg-white/90 rounded-full px-3 py-1.5 text-xs font-bold text-gray-700 shadow">
-                        {status === "in_progress" ? "→ Drop-off" : "→ Pickup"}
-                      </div>
-                    </>
-                  ) : (
-                    <div className="h-full flex items-center justify-center bg-gray-50">
-                      <div className="text-center">
-                        <MapPin className="w-10 h-10 text-gray-200 mx-auto mb-2" />
-                        <p className="text-sm text-gray-400 font-medium">Map unavailable</p>
-                        <p className="text-xs text-gray-300 mt-1">Enable location to see route</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Right: scrollable job details */}
-              <div className="pb-6">
-                {JobCard({ a: trackedJob, hideHeader: true, hideMap: true })}
-              </div>
-            </div>
-          </div>
-        );
-      }
-      // tracked job gone — reset and fall through to list
-      setTrackingJobId(null);
-    }
 
     return (
       <div>
@@ -3330,6 +3178,133 @@ export default function DriverDashboard() {
           </>
         )}
 
+        {/* ════ FULL-PAGE JOB DETAIL OVERLAY ════ */}
+        {(() => {
+          if (!trackingJobId) return null;
+          const trackedJob = activeJobs.find((a) => a.id === trackingJobId);
+          if (!trackedJob) return null;
+          const req = trackedJob.request;
+          const status = req?.status ?? "";
+          const price = getJobPrice(req);
+          const customerName = [trackedJob.customer?.firstName, trackedJob.customer?.lastName].filter(Boolean).join(" ");
+          const statusLabel =
+            status === "in_progress" ? "In Progress" :
+            status === "driver_accepted" ? "Accepted" :
+            status === "arrived" ? "Arrived" :
+            status === "customer_confirmed" ? "Confirmed" :
+            status.replace(/_/g, " ");
+          const statusColor =
+            status === "in_progress" ? "bg-blue-100 text-blue-700" :
+            status === "driver_accepted" ? "bg-green-100 text-green-700" :
+            status === "arrived" ? "bg-amber-100 text-amber-700" :
+            "bg-gray-100 text-gray-600";
+          const ovRouteFrom: [number, number] | undefined = latitude && longitude ? [latitude, longitude] : undefined;
+          const ovRouteTo: [number, number] | undefined = (() => {
+            if (status === "in_progress" && req?.dropoff?.lat) return [req.dropoff.lat, req.dropoff.lng];
+            if (["driver_accepted", "customer_confirmed", "arrived"].includes(status) && req?.pickup?.lat)
+              return [req.pickup.lat, req.pickup.lng];
+          })();
+          const ovMarkers: any[] = [];
+          if (latitude && longitude) ovMarkers.push({ id: "me", latitude, longitude, type: "user" as const, label: "You" });
+          if (req?.pickup?.lat) ovMarkers.push({ id: "pu", latitude: req.pickup.lat, longitude: req.pickup.lng, type: "pickup" as const, label: "Pickup" });
+          if (req?.dropoff?.lat && ["in_progress", "arrived"].includes(status))
+            ovMarkers.push({ id: "do", latitude: req.dropoff.lat, longitude: req.dropoff.lng, type: "dropoff" as const, label: "Drop-off" });
+          const showOvMap = !!ovRouteFrom && !!ovRouteTo && ["driver_accepted", "customer_confirmed", "arrived", "in_progress"].includes(status);
+          const ovExternalUrl = ovRouteFrom && ovRouteTo
+            ? `https://www.google.com/maps/dir/?api=1&origin=${ovRouteFrom[0]},${ovRouteFrom[1]}&destination=${ovRouteTo[0]},${ovRouteTo[1]}&travelmode=driving`
+            : null;
+
+          return (
+            <div className="fixed inset-0 z-[45] bg-white flex flex-col overflow-hidden">
+              {/* ── Shared header ── */}
+              <div
+                className="flex-shrink-0 flex items-center gap-3 px-4 border-b border-gray-100 bg-white"
+                style={{ paddingTop: "max(env(safe-area-inset-top), 12px)", paddingBottom: "12px" }}
+              >
+                <button
+                  onClick={() => setTrackingJobId(null)}
+                  className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 active:bg-gray-200 transition-colors"
+                >
+                  <ChevronLeft className="w-4 h-4 text-gray-700" />
+                </button>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-gray-900 truncate">
+                    {customerName ? `${customerName} Delivery` : "Delivery"}
+                  </p>
+                  <p className="text-xs text-gray-400">₦{price.toLocaleString()}</p>
+                </div>
+                <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full flex-shrink-0 ${statusColor}`}>
+                  {statusLabel}
+                </span>
+              </div>
+
+              {/* ── Mobile: single-column scrollable ── */}
+              <div
+                className="lg:hidden flex-1 overflow-y-auto bg-[#F5F7F5]"
+                style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+              >
+                <div className="px-4 pt-4 pb-8">
+                  {JobCard({ a: trackedJob, hideHeader: true })}
+                </div>
+              </div>
+
+              {/* ── Desktop: two-column layout ── */}
+              <div className="hidden lg:grid lg:grid-cols-2 flex-1 min-h-0">
+                {/* Left: full-height map */}
+                <div className="relative overflow-hidden bg-gray-50">
+                  {showOvMap ? (
+                    <>
+                      <div className="absolute inset-0">
+                        <MapView
+                          className="h-full w-full"
+                          markers={ovMarkers}
+                          userLatitude={latitude}
+                          userLongitude={longitude}
+                          routeFrom={ovRouteFrom}
+                          routeTo={ovRouteTo}
+                          showUserLocation={false}
+                          hideExternalLink
+                        />
+                      </div>
+                      {ovExternalUrl && (
+                        <a
+                          href={ovExternalUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="absolute bottom-4 right-4 z-[1000] flex items-center gap-1.5 bg-white text-gray-700 text-xs font-bold px-3 py-2 rounded-full shadow-md border border-gray-100"
+                        >
+                          <svg width="12" height="12" viewBox="0 0 48 48" fill="none">
+                            <path d="M24 4C15.163 4 8 11.163 8 20c0 12 16 28 16 28s16-16 16-28c0-8.837-7.163-16-16-16z" fill="#EA4335" />
+                            <circle cx="24" cy="20" r="6" fill="white" />
+                          </svg>
+                          Open in Google Maps
+                        </a>
+                      )}
+                      <div className="absolute top-4 left-4 z-[1000] bg-white/90 rounded-full px-3 py-1.5 text-xs font-bold text-gray-700 shadow">
+                        {status === "in_progress" ? "→ Drop-off" : "→ Pickup"}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="h-full flex items-center justify-center">
+                      <div className="text-center">
+                        <MapPin className="w-10 h-10 text-gray-200 mx-auto mb-2" />
+                        <p className="text-sm text-gray-400 font-medium">Map unavailable</p>
+                        <p className="text-xs text-gray-300 mt-1">Enable location to see route</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                {/* Right: scrollable job details */}
+                <div className="overflow-y-auto bg-[#F5F7F5]">
+                  <div className="p-6 pb-10">
+                    {JobCard({ a: trackedJob, hideHeader: true, hideMap: true })}
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
         {/* ════ DESKTOP lg+ ════ */}
         <div className="hidden lg:flex min-h-screen">
           <aside className="w-[240px] xl:w-[260px] flex-shrink-0 flex flex-col fixed top-0 left-0 bottom-0 z-40 bg-[#028538]" style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}>
@@ -3458,7 +3433,7 @@ export default function DriverDashboard() {
                 </div>
               )}
               {activeTab === "jobs" && (
-                <div className={trackingJobId ? "w-full" : "max-w-2xl"}>
+                <div className="max-w-2xl">
                   {JobsScreen()}
                 </div>
               )}
