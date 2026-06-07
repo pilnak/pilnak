@@ -242,12 +242,12 @@ export function ChatPanel({
       {/* ── Messages ── */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-0.5" style={{ WebkitOverflowScrolling: "touch" }}>
         {isInitialising ? (
-          <div className="flex flex-col items-center justify-center h-full gap-3">
+          <div className="flex flex-col items-center justify-center flex-1 gap-3">
             <div className="w-8 h-8 rounded-full border-2 border-[#028538] border-t-transparent animate-spin" />
             <p className="text-xs text-gray-400 font-medium">Connecting…</p>
           </div>
         ) : messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center px-6">
+          <div className="flex flex-col items-center justify-center flex-1 text-center px-6">
             <div className="relative mb-5">
               <div className="w-20 h-20 rounded-full bg-[#028538]/8 flex items-center justify-center">
                 <div className="w-12 h-12 rounded-full bg-[#028538]/15 flex items-center justify-center">
