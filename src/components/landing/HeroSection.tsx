@@ -1,16 +1,89 @@
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, Truck, MapPin, Clock, Package, ChevronRight, Navigation, Crosshair, Route, ShieldCheck, Zap } from "lucide-react";
+import { ArrowRight, Truck, MapPin, Clock, Package, ChevronRight, Navigation, Route, Loader2, LocateFixed, RefreshCw, CheckCircle2, AlertCircle, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import { MapView } from "@/components/map/MapView";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { useReverseGeocode } from "@/hooks/useReverseGeocode";
 import { useDistanceCalculation } from "@/hooks/useDistanceCalculation";
 import { LocationInput } from "./LocationInput";
+import { formatLocationName, bootstrapGoogleMaps } from "@/hooks/useLocationSearch";
 import { auth } from "@/integrations/firebase/client";
 
 // Key used to pass hero locations into the customer dashboard
 export const HERO_BOOKING_KEY = "pilnak_hero_booking";
+
+// ── GPS helpers (mirrors DeliveryRequestForm) ─────────────────────────────────
+
+type GPSErrorCode = "denied" | "unavailable" | "timeout" | "unsupported";
+type LocFieldState = "idle" | "loading" | "success" | "error";
+type GPSResult =
+  | { ok: true; lat: number; lng: number; accuracy: number }
+  | { ok: false; code: GPSErrorCode };
+
+const GPS_ERRORS: Record<GPSErrorCode, { title: string; hint: string }> = {
+  denied: {
+    title: "Location permission denied",
+    hint: "Tap the lock icon in your browser's address bar, allow location, then try again.",
+  },
+  unavailable: {
+    title: "Location services are off",
+    hint: "Enable GPS on your device and try again, or type your address manually.",
+  },
+  timeout: {
+    title: "Location took too long",
+    hint: "Move to an area with better GPS signal and try again.",
+  },
+  unsupported: {
+    title: "Geolocation not supported",
+    hint: "Your browser doesn't support location access. Please type your address.",
+  },
+};
+
+function fetchCurrentPosition(): Promise<GPSResult> {
+  if (!navigator.geolocation) return Promise.resolve({ ok: false, code: "unsupported" });
+
+  const fast = new Promise<GPSResult>((resolve) => {
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) =>
+        resolve({ ok: true, lat: coords.latitude, lng: coords.longitude, accuracy: coords.accuracy }),
+      (err) => {
+        const code: GPSErrorCode = err.code === 1 ? "denied" : err.code === 2 ? "unavailable" : "timeout";
+        resolve({ ok: false, code });
+      },
+      { enableHighAccuracy: false, timeout: 4000, maximumAge: 30000 },
+    );
+  });
+
+  const precise = new Promise<GPSResult>((resolve) => {
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) =>
+        resolve({ ok: true, lat: coords.latitude, lng: coords.longitude, accuracy: coords.accuracy }),
+      (err) => {
+        const code: GPSErrorCode = err.code === 1 ? "denied" : err.code === 2 ? "unavailable" : "timeout";
+        resolve({ ok: false, code });
+      },
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 },
+    );
+  });
+
+  return fast.then((result) => {
+    if (result.ok && result.accuracy <= 1000) return result;
+    return precise;
+  });
+}
+
+async function reverseGeocodeHero(lat: number, lng: number): Promise<string> {
+  await bootstrapGoogleMaps();
+  const geocoder = new (window as any).google.maps.Geocoder();
+  const result = await geocoder.geocode({ location: { lat, lng } });
+  const address: string | undefined = result?.results?.[0]?.formatted_address;
+  if (!address) throw new Error("No address found");
+  return address.replace(/,\s*[A-Z][a-zA-Z ]+$/, "").trim();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 interface LocationCoords {
   address: string;
@@ -32,29 +105,51 @@ export function HeroSection({ onContinueAsCustomer, onContinueAsDriver }: HeroSe
   const [pickup, setPickup] = useState<LocationCoords>({ address: "", lat: null, lon: null });
   const [dropoff, setDropoff] = useState<LocationCoords>({ address: "", lat: null, lon: null });
 
-  const { distanceText, estimatedTime, estimatedPrice } = useDistanceCalculation(
+  const { distanceText, estimatedTime } = useDistanceCalculation(
     pickup.lat,
     pickup.lon,
     dropoff.lat,
     dropoff.lon
   );
 
-  const handleUseCurrentLocation = async () => {
-    if (latitude && longitude) {
-      setPickup({
-        address: displayName || "Current location",
-        lat: latitude,
-        lon: longitude,
-      });
-      return;
+  const [locState, setLocState] = useState<{ pickup: LocFieldState; dropoff: LocFieldState }>({
+    pickup: "idle",
+    dropoff: "idle",
+  });
+  const [locError, setLocError] = useState<{ field: "pickup" | "dropoff"; code: GPSErrorCode } | null>(null);
+  const [locAccuracy, setLocAccuracy] = useState<{ field: "pickup" | "dropoff"; meters: number } | null>(null);
+
+  const handleUseCurrentLocation = async (field: "pickup" | "dropoff") => {
+    if (locError?.field === field) setLocError(null);
+    if (locAccuracy?.field === field) setLocAccuracy(null);
+    setLocState((prev) => ({ ...prev, [field]: "loading" }));
+    try {
+      const gps = await fetchCurrentPosition();
+      if (gps.ok === false) {
+        setLocError({ field, code: gps.code });
+        setLocState((prev) => ({ ...prev, [field]: "error" }));
+        return;
+      }
+      if (gps.accuracy > 200) {
+        setLocAccuracy({ field, meters: Math.round(gps.accuracy) });
+      }
+      let address: string;
+      try {
+        address = await reverseGeocodeHero(gps.lat, gps.lng);
+      } catch {
+        address = `${gps.lat.toFixed(5)}, ${gps.lng.toFixed(5)}`;
+      }
+      if (field === "pickup") {
+        setPickup({ address, lat: gps.lat, lon: gps.lng });
+      } else {
+        setDropoff({ address, lat: gps.lat, lon: gps.lng });
+      }
+      setLocState((prev) => ({ ...prev, [field]: "success" }));
+      setTimeout(() => setLocState((prev) => ({ ...prev, [field]: "idle" })), 2500);
+    } catch {
+      setLocError({ field, code: "timeout" });
+      setLocState((prev) => ({ ...prev, [field]: "error" }));
     }
-    const result = await requestPermission();
-    if (!result) return;
-    setPickup({
-      address: displayName || "Current location",
-      lat: result.latitude,
-      lon: result.longitude,
-    });
   };
 
   const mapMarkers = useMemo(() => {
@@ -75,12 +170,6 @@ export function HeroSection({ onContinueAsCustomer, onContinueAsDriver }: HeroSe
   }, [pickup, dropoff]);
 
   const getCurrentTime = () => new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-
-  const getLocationText = () => {
-    if (isGeocodingLoading) return "Getting location...";
-    if (displayName) return displayName;
-    return "Enter pickup address";
-  };
 
   useEffect(() => {
     void requestPermission();
@@ -144,45 +233,160 @@ export function HeroSection({ onContinueAsCustomer, onContinueAsDriver }: HeroSe
             {/* Location Inputs Card */}
             <div className="bg-card border border-border rounded-2xl p-4 lg:p-5 space-y-3 shadow-sm">
               {/* Pickup Location */}
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                    <div className="w-2 h-2 rounded-full bg-primary" />
-                    Pickup
-                  </label>
+              <div>
+                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 block">
+                  Pickup Location
+                </Label>
+                <div className="flex gap-2">
+                  <LocationInput
+                    value={pickup.address}
+                    placeholder={isGeocodingLoading ? "Getting location..." : "Search pickup address…"}
+                    dotColor="primary"
+                    onChange={(val) => {
+                      setPickup({ address: val, lat: null, lon: null });
+                      if (locError?.field === "pickup") setLocError(null);
+                      if (locAccuracy?.field === "pickup") setLocAccuracy(null);
+                    }}
+                    onSelect={(s) =>
+                      setPickup({
+                        address: formatLocationName(s),
+                        lat: parseFloat(s.lat),
+                        lon: parseFloat(s.lon),
+                      })
+                    }
+                  />
                   <button
-                    onClick={handleUseCurrentLocation}
-                    className="text-xs font-medium text-primary hover:text-primary/80 flex items-center gap-1 transition-colors"
+                    type="button"
+                    onClick={() => handleUseCurrentLocation("pickup")}
+                    disabled={locState.pickup === "loading"}
+                    title={locState.pickup === "error" ? "Retry location" : "Use current location"}
+                    className={`h-10 w-10 flex-shrink-0 rounded-xl border flex items-center justify-center transition-all disabled:pointer-events-none ${
+                      locState.pickup === "error"
+                        ? "border-red-200 bg-red-50 text-red-500 hover:bg-red-100"
+                        : locState.pickup === "success"
+                        ? "border-emerald-200 bg-emerald-50 text-emerald-600"
+                        : locState.pickup === "loading"
+                        ? "border-primary/20 bg-primary/5 text-primary/40"
+                        : "border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 hover:border-primary/50"
+                    }`}
                   >
-                    <Crosshair className="w-3 h-3" />
-                    Use my location
+                    {locState.pickup === "loading" ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : locState.pickup === "error" ? (
+                      <RefreshCw className="h-4 w-4" />
+                    ) : locState.pickup === "success" ? (
+                      <CheckCircle2 className="h-4 w-4" />
+                    ) : (
+                      <LocateFixed className="h-4 w-4" />
+                    )}
                   </button>
                 </div>
-                <LocationInput
-                  value={pickup.address}
-                  onChange={(value, lat, lon) => setPickup({ address: value, lat: lat ?? null, lon: lon ?? null })}
-                  placeholder={getLocationText()}
-                  icon="pickup"
-                />
+                {locError?.field === "pickup" && (
+                  <div className="mt-2 flex items-start gap-2 bg-red-50 border border-red-100 rounded-xl px-3 py-2.5">
+                    <AlertCircle className="h-3.5 w-3.5 mt-0.5 flex-shrink-0 text-red-500" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-red-700">{GPS_ERRORS[locError.code].title}</p>
+                      <p className="text-xs text-red-600/80 mt-0.5">{GPS_ERRORS[locError.code].hint}</p>
+                    </div>
+                    <button type="button" onClick={() => setLocError(null)} className="text-red-400 hover:text-red-600 flex-shrink-0 mt-0.5">
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                )}
+                {locAccuracy?.field === "pickup" && (
+                  <div className="mt-2 flex items-start gap-2 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2.5">
+                    <AlertCircle className="h-3.5 w-3.5 mt-0.5 flex-shrink-0 text-amber-500" />
+                    <p className="text-xs text-amber-700 flex-1">
+                      Location accuracy is ~{locAccuracy.meters}m — address may be approximate. Review and edit if needed.
+                    </p>
+                    <button type="button" onClick={() => setLocAccuracy(null)} className="text-amber-400 hover:text-amber-600 flex-shrink-0 mt-0.5">
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                )}
               </div>
 
-              {/* Connector Line */}
-              <div className="flex items-center gap-3 pl-3">
-                <div className="w-0.5 h-6 bg-border rounded-full" />
+              {/* Route line */}
+              <div className="flex items-center gap-3 py-0.5 px-1">
+                <div className="w-3 flex flex-col items-center gap-0.5 flex-shrink-0">
+                  <div className="w-px h-3 bg-border" />
+                  <div className="w-px h-3 bg-border" />
+                </div>
+                <p className="text-xs text-muted-foreground">Route</p>
               </div>
 
               {/* Dropoff Location */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                  <div className="w-2 h-2 rounded-full bg-destructive" />
-                  Dropoff
-                </label>
-                <LocationInput
-                  value={dropoff.address}
-                  onChange={(value, lat, lon) => setDropoff({ address: value, lat: lat ?? null, lon: lon ?? null })}
-                  placeholder="Where should we deliver?"
-                  icon="dropoff"
-                />
+              <div>
+                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 block">
+                  Drop-off Location
+                </Label>
+                <div className="flex gap-2">
+                  <LocationInput
+                    value={dropoff.address}
+                    placeholder="Search drop-off address…"
+                    dotColor="destructive"
+                    onChange={(val) => {
+                      setDropoff({ address: val, lat: null, lon: null });
+                      if (locError?.field === "dropoff") setLocError(null);
+                      if (locAccuracy?.field === "dropoff") setLocAccuracy(null);
+                    }}
+                    onSelect={(s) =>
+                      setDropoff({
+                        address: formatLocationName(s),
+                        lat: parseFloat(s.lat),
+                        lon: parseFloat(s.lon),
+                      })
+                    }
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleUseCurrentLocation("dropoff")}
+                    disabled={locState.dropoff === "loading"}
+                    title={locState.dropoff === "error" ? "Retry location" : "Use current location"}
+                    className={`h-10 w-10 flex-shrink-0 rounded-xl border flex items-center justify-center transition-all disabled:pointer-events-none ${
+                      locState.dropoff === "error"
+                        ? "border-red-200 bg-red-50 text-red-500 hover:bg-red-100"
+                        : locState.dropoff === "success"
+                        ? "border-emerald-200 bg-emerald-50 text-emerald-600"
+                        : locState.dropoff === "loading"
+                        ? "border-primary/20 bg-primary/5 text-primary/40"
+                        : "border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 hover:border-primary/50"
+                    }`}
+                  >
+                    {locState.dropoff === "loading" ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : locState.dropoff === "error" ? (
+                      <RefreshCw className="h-4 w-4" />
+                    ) : locState.dropoff === "success" ? (
+                      <CheckCircle2 className="h-4 w-4" />
+                    ) : (
+                      <LocateFixed className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+                {locError?.field === "dropoff" && (
+                  <div className="mt-2 flex items-start gap-2 bg-red-50 border border-red-100 rounded-xl px-3 py-2.5">
+                    <AlertCircle className="h-3.5 w-3.5 mt-0.5 flex-shrink-0 text-red-500" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-red-700">{GPS_ERRORS[locError.code].title}</p>
+                      <p className="text-xs text-red-600/80 mt-0.5">{GPS_ERRORS[locError.code].hint}</p>
+                    </div>
+                    <button type="button" onClick={() => setLocError(null)} className="text-red-400 hover:text-red-600 flex-shrink-0 mt-0.5">
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                )}
+                {locAccuracy?.field === "dropoff" && (
+                  <div className="mt-2 flex items-start gap-2 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2.5">
+                    <AlertCircle className="h-3.5 w-3.5 mt-0.5 flex-shrink-0 text-amber-500" />
+                    <p className="text-xs text-amber-700 flex-1">
+                      Location accuracy is ~{locAccuracy.meters}m — address may be approximate. Review and edit if needed.
+                    </p>
+                    <button type="button" onClick={() => setLocAccuracy(null)} className="text-amber-400 hover:text-amber-600 flex-shrink-0 mt-0.5">
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Distance & Time Estimate */}
@@ -196,11 +400,6 @@ export function HeroSection({ onContinueAsCustomer, onContinueAsDriver }: HeroSe
                     <Clock className="w-4 h-4 text-muted-foreground" />
                     <span className="text-sm text-muted-foreground">~{estimatedTime}</span>
                   </div>
-                  {estimatedPrice && (
-                    <span className="text-sm font-semibold text-primary">
-                      ₦{estimatedPrice.toLocaleString()}
-                    </span>
-                  )}
                 </div>
               )}
 
