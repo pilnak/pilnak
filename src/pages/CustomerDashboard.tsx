@@ -2217,9 +2217,14 @@ export default function CustomerDashboard() {
     useState(false);
   const [showNotificationsMobile, setShowNotificationsMobile] = useState(false);
   const [unreadMessages, setUnreadMessages] = useState(0);
-  // Pixels of screen currently occupied by the on-screen keyboard.
-  // Used to push the chat overlay's bottom edge up above the keyboard.
-  const [keyboardH, setKeyboardH] = useState(0);
+  // Mirror visualViewport so the chat overlay always covers exactly the visible
+  // area above the keyboard, including any offsetTop iOS may introduce.
+  const [chatOverlayH, setChatOverlayH] = useState(
+    () => window.visualViewport?.height ?? window.innerHeight,
+  );
+  const [vvOffsetTop, setVvOffsetTop] = useState(
+    () => window.visualViewport?.offsetTop ?? 0,
+  );
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredDeliveries, setFilteredDeliveries] = useState<
     DeliveryRequest[]
@@ -2643,14 +2648,20 @@ export default function CustomerDashboard() {
     };
   }, [user?.uid]);
 
-  // Track keyboard height so the chat overlay can avoid it.
-  // On iOS: innerHeight is stable; vv.height shrinks → keyboardH = keyboard size.
-  // On Android (resizes-content): innerHeight shrinks too → keyboardH ≈ 0 (browser handles it).
+  // Keep chatOverlayH / vvOffsetTop in sync with the visual viewport.
+  // On iOS, innerHeight never changes — vv.height shrinks when the keyboard opens.
+  // vv.offsetTop can be non-zero if iOS slides the visual viewport to expose the
+  // focused input (even with body scroll lock). We mirror both values so the
+  // overlay is always exactly the visible area: height = vv.height, shifted down
+  // by vv.offsetTop via translateY. On Android (resizes-content) innerHeight
+  // already shrinks, so vv.height ≈ innerHeight and the overlay stays full-height.
   useEffect(() => {
     const vv = window.visualViewport;
     if (!vv) return;
-    const update = () =>
-      setKeyboardH(Math.max(0, window.innerHeight - vv.height - vv.offsetTop));
+    const update = () => {
+      setChatOverlayH(vv.height);
+      setVvOffsetTop(vv.offsetTop);
+    };
     vv.addEventListener("resize", update);
     vv.addEventListener("scroll", update);
     return () => {
@@ -4281,8 +4292,10 @@ export default function CustomerDashboard() {
   // Computed values for the mobile full-screen chat overlay
   const isMobileChatOpen =
     (activeChat !== null || activeSupportChat) && activeTab === "messages";
-  // True when the on-screen keyboard is open (visual viewport shrank by >100 px
-  const mobileKeyboardOpen = keyboardH > 100;
+  // Keyboard is open when the visual viewport is meaningfully smaller than the
+  // layout viewport (iOS: innerHeight stays fixed; Android: both shrink together
+  // so this stays false and the browser handles layout via resizes-content).
+  const mobileKeyboardOpen = chatOverlayH < window.innerHeight - 100;
   const mobileChatCustomerName =
     (profile?.firstName
       ? `${profile.firstName}${profile.lastName ? " " + profile.lastName : ""}`
@@ -4745,7 +4758,8 @@ export default function CustomerDashboard() {
           <div
             className="fixed inset-x-0 top-0 z-[60] bg-[#f2f6f3] overscroll-none flex flex-col"
             style={{
-              bottom: `${keyboardH}px`,
+              height: `${chatOverlayH}px`,
+              transform: `translateY(${vvOffsetTop}px)`,
               paddingTop: "env(safe-area-inset-top, 0px)",
             }}
           >
