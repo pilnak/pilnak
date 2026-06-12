@@ -3,13 +3,35 @@
 const BASE_FARE_NGN = 500;
 const PER_KM_NGN = 150;
 
-export type VehicleTier = "economy" | "premium" | "xl" | "heavy";
+// Legacy ride-hailing tiers (used by BookingContext)
+type LegacyTier = "economy" | "premium" | "xl" | "heavy";
+
+// Freight vehicle types
+export type FreightVehicleType =
+  | "cargo_van"
+  | "box_truck"
+  | "dry_van"
+  | "flatbed"
+  | "reefer"
+  | "power_only"
+  | "auto_transport";
+
+export type VehicleTier = LegacyTier | FreightVehicleType;
 
 const MULTIPLIERS: Record<VehicleTier, number> = {
+  // Legacy tiers
   economy: 1,
   premium: 1.5,
   xl: 2,
   heavy: 3,
+  // Freight vehicle types
+  cargo_van: 1.2,
+  box_truck: 1.8,
+  dry_van: 2.0,
+  flatbed: 2.5,
+  reefer: 2.5,
+  power_only: 3.0,
+  auto_transport: 3.0,
 };
 
 // Lagos traffic-aware speed tiers (km/h)

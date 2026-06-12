@@ -35,14 +35,15 @@ import { DeliveryNegotiationSection } from "./DeliveryNegotiationSection";
 import { collection, doc, getDocs, getDoc, onSnapshot, query, serverTimestamp, updateDoc, Timestamp, where } from "firebase/firestore";
 import { db } from "@/integrations/firebase/client";
 import { estimatePriceNgN } from "@/lib/pricing";
-import type { VehicleTier } from "@/lib/pricing";
+import type { FreightVehicleType } from "@/lib/pricing";
 import { generateDeliveryName } from "@/lib/deliveryName";
 import { toast } from "sonner";
 import {
   Package,
   Truck,
-  Bike,
   Car,
+  Snowflake,
+  Zap,
   ChevronRight,
   ChevronLeft,
   LocateFixed,
@@ -176,7 +177,7 @@ interface DeliveryRequestFormProps {
   fullPage?: boolean;
 }
 
-type VehicleType = "bike_rider" | "car_driver" | "van_driver" | "truck_driver";
+type VehicleType = FreightVehicleType;
 type ItemSize = "small" | "medium" | "large" | "extra_large";
 type DriverType = "self_driver" | "company_driver";
 
@@ -238,34 +239,57 @@ const vehicleOptions: {
   tag: string;
 }[] = [
   {
-    type: "bike_rider",
-    label: "Bike",
-    icon: Bike,
-    description: "Fast & light",
-    tag: "Best value",
+    type: "cargo_van",
+    label: "Cargo Van",
+    icon: Truck,
+    description: "Versatile enclosed van",
+    tag: "Most popular",
   },
   {
-    type: "car_driver",
-    label: "Car",
+    type: "box_truck",
+    label: "Box Truck",
+    icon: Package,
+    description: "Medium-volume freight",
+    tag: "Versatile",
+  },
+  {
+    type: "dry_van",
+    label: "Dry Van",
+    icon: Truck,
+    description: "Standard enclosed trailer",
+    tag: "Standard",
+  },
+  {
+    type: "flatbed",
+    label: "Flatbed",
+    icon: Truck,
+    description: "Open deck, oversized loads",
+    tag: "Open cargo",
+  },
+  {
+    type: "reefer",
+    label: "Reefer",
+    icon: Snowflake,
+    description: "Temperature-controlled",
+    tag: "Cold chain",
+  },
+  {
+    type: "power_only",
+    label: "Power Only",
+    icon: Zap,
+    description: "Tractor unit, no trailer",
+    tag: "Trailer only",
+  },
+  {
+    type: "auto_transport",
+    label: "Auto Transport",
     icon: Car,
-    description: "Medium packages",
-    tag: "Popular",
-  },
-  {
-    type: "van_driver",
-    label: "Van",
-    icon: Truck,
-    description: "Large items",
-    tag: "Spacious",
-  },
-  {
-    type: "truck_driver",
-    label: "Truck",
-    icon: Truck,
-    description: "Heavy/bulk loads",
-    tag: "Heavy duty",
+    description: "Vehicle hauling",
+    tag: "Vehicles",
   },
 ];
+
+const VALID_VEHICLE_TYPES = new Set(vehicleOptions.map((o) => o.type));
 
 const sizeOptions: { value: ItemSize; label: string; sub: string }[] = [
   { value: "small", label: "Small", sub: "< 5 kg" },
@@ -274,12 +298,6 @@ const sizeOptions: { value: ItemSize; label: string; sub: string }[] = [
   { value: "extra_large", label: "Extra Large", sub: "> 50 kg" },
 ];
 
-const VEHICLE_TIER_MAP: Record<VehicleType, VehicleTier> = {
-  bike_rider: "economy",
-  car_driver: "premium",
-  van_driver: "xl",
-  truck_driver: "heavy",
-};
 
 const STEPS_SELF = [
   "Locations",
@@ -663,7 +681,9 @@ export function DeliveryRequestForm({
     itemDescription: R?.formData.itemDescription ?? "",
     itemWeight: R?.formData.itemWeight ?? "",
     itemSize: (R?.formData.itemSize ?? "small") as ItemSize,
-    vehicleType: (R?.formData.vehicleType ?? "bike_rider") as VehicleType,
+    vehicleType: (R?.formData.vehicleType && VALID_VEHICLE_TYPES.has(R.formData.vehicleType as VehicleType)
+      ? R.formData.vehicleType
+      : "cargo_van") as VehicleType,
     driverType: (R?.formData.driverType ?? "self_driver") as DriverType,
     isScheduled: R?.formData.isScheduled ?? false,
     scheduledTime: R?.formData.scheduledTime ?? "",
@@ -719,7 +739,7 @@ export function DeliveryRequestForm({
     try {
       const gps = await fetchCurrentPosition();
 
-      if (!gps.ok) {
+      if (gps.ok === false) {
         setLocError({ field, code: gps.code });
         setLocState((prev) => ({ ...prev, [field]: "error" }));
         return;
@@ -773,8 +793,7 @@ export function DeliveryRequestForm({
       dropoffLatitude,
       dropoffLongitude,
     );
-    const tier = VEHICLE_TIER_MAP[formData.vehicleType];
-    return { price: estimatePriceNgN(distanceKm, tier), distanceKm };
+    return { price: estimatePriceNgN(distanceKm, formData.vehicleType), distanceKm };
   }, [
     formData.driverType,
     formData.vehicleType,
@@ -2449,7 +2468,7 @@ export function DeliveryRequestForm({
           ) : (
             <Button
               type="button"
-              onClick={handleSubmit}
+              onClick={() => handleSubmit()}
               className="flex-1 rounded-xl h-11"
               disabled={
                 isLoading ||
