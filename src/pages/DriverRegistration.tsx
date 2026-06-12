@@ -17,8 +17,9 @@ import {
   User,
   Truck,
   Car,
-  Bike,
   Package,
+  Snowflake,
+  Zap,
 } from "lucide-react";
 
 type Step = 1 | 2 | 3;
@@ -43,7 +44,7 @@ const initial: FormState = {
   firstName: "",
   lastName: "",
   phone: "",
-  vehicleType: "car_driver",
+  vehicleType: "cargo_van",
   brand: "",
   model: "",
   plateNumber: "",
@@ -82,10 +83,13 @@ async function uploadToCloudinary(dataUrl: string): Promise<string> {
 }
 
 const VEHICLE_OPTIONS = [
-  { value: "bike_rider", label: "Bike", Icon: Bike, desc: "Two-wheeler / motorcycle" },
-  { value: "car_driver", label: "Car", Icon: Car, desc: "Standard passenger car" },
-  { value: "van_driver", label: "Van", Icon: Truck, desc: "Van or minibus" },
-  { value: "truck_driver", label: "Truck", Icon: Package, desc: "Large freight truck" },
+  { value: "cargo_van",      label: "Cargo Van",      Icon: Truck,     desc: "Versatile enclosed van" },
+  { value: "box_truck",      label: "Box Truck",      Icon: Package,   desc: "Medium-volume freight" },
+  { value: "dry_van",        label: "Dry Van",        Icon: Truck,     desc: "Standard enclosed trailer" },
+  { value: "flatbed",        label: "Flatbed",        Icon: Truck,     desc: "Open deck, oversized loads" },
+  { value: "reefer",         label: "Reefer",         Icon: Snowflake, desc: "Temperature-controlled trailer" },
+  { value: "power_only",     label: "Power Only",     Icon: Zap,       desc: "Tractor unit, no trailer" },
+  { value: "auto_transport", label: "Auto Transport", Icon: Car,       desc: "Vehicle hauling" },
 ] as const;
 
 const STEP_META = [

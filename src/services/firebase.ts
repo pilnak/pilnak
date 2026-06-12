@@ -1838,6 +1838,59 @@ export function listenBroadcastResponses(
   });
 }
 
+// ── Vehicle type migration ────────────────────────────────────────────────────
+
+const LEGACY_VEHICLE_TYPE_MAP: Record<string, string> = {
+  bike_rider:   "cargo_van",
+  car_driver:   "cargo_van",
+  van_driver:   "cargo_van",
+  truck_driver: "dry_van",
+};
+
+export interface MigrateVehicleTypesResult {
+  updated: number;
+  skipped: number;
+  errors: number;
+}
+
+export async function migrateVehicleTypes(): Promise<MigrateVehicleTypesResult> {
+  const result: MigrateVehicleTypesResult = { updated: 0, skipped: 0, errors: 0 };
+  const oldValues = new Set(Object.keys(LEGACY_VEHICLE_TYPE_MAP));
+
+  const jobs: Array<{ collectionName: string; field: string }> = [
+    { collectionName: "delivery_requests",   field: "transportType" },
+    { collectionName: "delivery_broadcasts", field: "transportType" },
+    { collectionName: "vehicles",            field: "vehicleType" },
+    { collectionName: "drivers",             field: "driverType" },
+  ];
+
+  for (const { collectionName, field } of jobs) {
+    try {
+      const snap = await getDocs(collection(db, collectionName));
+      const batch = writeBatch(db);
+      let batchCount = 0;
+
+      for (const docSnap of snap.docs) {
+        const value = docSnap.get(field) as string | undefined;
+        if (!value || !oldValues.has(value)) { result.skipped++; continue; }
+        batch.update(docSnap.ref, { [field]: LEGACY_VEHICLE_TYPE_MAP[value] });
+        batchCount++;
+        result.updated++;
+
+        if (batchCount >= 500) {
+          await batch.commit();
+          batchCount = 0;
+        }
+      }
+      if (batchCount > 0) await batch.commit();
+    } catch {
+      result.errors++;
+    }
+  }
+
+  return result;
+}
+
 export function listenActiveBroadcasts(
   cb: (broadcasts: Array<DeliveryBroadcastDoc & { id: string }>) => void
 ): Unsubscribe {
