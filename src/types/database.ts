@@ -1,7 +1,7 @@
 // Database types for Pilnak
 
 export type AppRole = 'admin' | 'customer' | 'driver';
-export type DriverType = 'bike_rider' | 'car_driver' | 'truck_driver' | 'van_driver';
+export type DriverType = 'cargo_van' | 'box_truck' | 'dry_van' | 'flatbed' | 'reefer' | 'power_only' | 'auto_transport';
 export type DriverStatus = 'pending_verification' | 'approved' | 'suspended' | 'rejected';
 export type DeliveryStatus = 'pending' | 'admin_review' | 'negotiating_price' | 'price_set' | 'payment_pending' | 'customer_confirmed' | 'driver_assigned' | 'driver_accepted' | 'in_progress' | 'arrived' | 'awaiting_signature' | 'completed' | 'cancelled';
 export type GenderType = 'male' | 'female' | 'other' | 'prefer_not_to_say';
