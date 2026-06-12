@@ -78,6 +78,8 @@ import {
   type PaymentDetails,
   type GeocodedResult,
   type ChatDoc,
+  migrateVehicleTypes,
+  type MigrateVehicleTypesResult,
 } from "@/services/firebase";
 import type { SearchPin } from "@/components/map/MapView";
 import {
@@ -1661,6 +1663,10 @@ export default function AdminDashboard() {
     (AssignmentDoc & { id: string })[]
   >([]);
   const [vehicles, setVehicles] = useState<(VehicleDoc & { id: string })[]>([]);
+  const [migrationState, setMigrationState] = useState<
+    "idle" | "running" | "done" | "error"
+  >("idle");
+  const [migrationResult, setMigrationResult] = useState<MigrateVehicleTypesResult | null>(null);
 
   useEffect(() => {
     if (isLoading) return;
@@ -4120,6 +4126,57 @@ export default function AdminDashboard() {
                       </Button>
                     </div>
                   ))}
+                </div>
+              </div>
+
+              {/* Data Migration */}
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                <div className="px-5 py-4 border-b border-gray-50">
+                  <h3 className="font-bold text-sm text-gray-900">Data Migration</h3>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    One-time migration of legacy vehicle types to the current freight type system
+                  </p>
+                </div>
+                <div className="flex items-center justify-between px-5 py-4">
+                  <div className="flex items-center gap-3">
+                    <div className="h-9 w-9 rounded-xl bg-amber-50 flex items-center justify-center flex-shrink-0">
+                      <Truck className="h-4 w-4 text-amber-500" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-sm text-gray-800">Migrate Vehicle Types</p>
+                      <p className="text-xs text-gray-400">
+                        {migrationState === "idle" && "Updates bike_rider, car_driver, van_driver, truck_driver → new types"}
+                        {migrationState === "running" && "Running migration…"}
+                        {migrationState === "done" && migrationResult && (
+                          `Done — ${migrationResult.updated} updated, ${migrationResult.skipped} already current`
+                        )}
+                        {migrationState === "error" && "Migration failed — check console for details"}
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    variant={migrationState === "done" ? "outline" : "default"}
+                    size="sm"
+                    className="rounded-xl h-9 min-w-[90px]"
+                    disabled={migrationState === "running" || migrationState === "done"}
+                    onClick={async () => {
+                      setMigrationState("running");
+                      try {
+                        const result = await migrateVehicleTypes();
+                        setMigrationResult(result);
+                        setMigrationState("done");
+                      } catch {
+                        setMigrationState("error");
+                      }
+                    }}
+                  >
+                    {migrationState === "running" ? (
+                      <span className="flex items-center gap-1.5">
+                        <span className="h-3.5 w-3.5 rounded-full border-2 border-primary-foreground/40 border-t-primary-foreground animate-spin" />
+                        Running
+                      </span>
+                    ) : migrationState === "done" ? "Done ✓" : "Run Migration"}
+                  </Button>
                 </div>
               </div>
 

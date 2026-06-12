@@ -114,14 +114,13 @@ const LEGAL_STRUCTURES = [
 const FLEET_SIZES = ["1–5", "6–20", "21–50", "51–200", "200+"];
 
 const VEHICLE_TYPE_OPTIONS = [
-  "Motorcycle",
-  "Car / Sedan",
-  "Van",
-  "Pickup Truck",
+  "Dry Van",
+  "Reefer",
+  "Flatbed",
   "Box Truck",
-  "Semi-Truck",
-  "Refrigerated Truck",
-  "Bicycle / E-bike",
+  "Cargo Van",
+  "Power Only",
+  "Auto Transport",
 ];
 
 const SERVICE_COVERAGE_OPTIONS = [
