@@ -460,12 +460,14 @@ function NavItem({
   active,
   onClick,
   badge,
+  badgeBreakdown,
 }: {
   icon: React.ElementType;
   label: string;
   active: boolean;
   onClick: () => void;
   badge?: number;
+  badgeBreakdown?: string;
 }) {
   return (
     <button
@@ -486,8 +488,26 @@ function NavItem({
       />
       <span className="flex-1 text-left">{label}</span>
       {(badge ?? 0) > 0 && (
-        <span className="h-5 min-w-[20px] px-1.5 rounded-full bg-white/20 text-[10px] font-bold text-white flex items-center justify-center">
-          {badge}
+        <span className="group/bd relative flex-shrink-0">
+          <span className="h-5 min-w-[20px] px-1.5 rounded-full bg-white/20 text-[10px] font-bold text-white flex items-center justify-center">
+            {badge}
+          </span>
+          {badgeBreakdown && (
+            <span
+              className="pointer-events-none absolute left-full top-1/2 -translate-y-1/2 ml-2.5 hidden group-hover/bd:block whitespace-nowrap rounded-lg px-2.5 py-1.5 text-[10px] font-medium text-white shadow-xl z-50"
+              style={{
+                background: "rgba(15,17,23,0.92)",
+                backdropFilter: "blur(8px)",
+                WebkitBackdropFilter: "blur(8px)",
+              }}
+            >
+              <span
+                className="absolute right-full top-1/2 -translate-y-1/2 h-0 w-0 border-y-[5px] border-y-transparent border-r-[6px]"
+                style={{ borderRightColor: "rgba(15,17,23,0.92)" }}
+              />
+              {badgeBreakdown}
+            </span>
+          )}
         </span>
       )}
     </button>
@@ -2065,9 +2085,17 @@ function DriversTab({
                       <SelectValue placeholder="Select" />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl">
-                      {["Bike", "Car", "Van", "Truck", "Pickup"].map((t) => (
-                        <SelectItem key={t} value={t.toLowerCase()}>
-                          {t}
+                      {[
+                        { value: "cargo_van",      label: "Cargo Van" },
+                        { value: "box_truck",      label: "Box Truck" },
+                        { value: "dry_van",        label: "Dry Van" },
+                        { value: "flatbed",        label: "Flatbed" },
+                        { value: "reefer",         label: "Reefer" },
+                        { value: "power_only",     label: "Power Only" },
+                        { value: "auto_transport", label: "Auto Transport" },
+                      ].map((t) => (
+                        <SelectItem key={t.value} value={t.value}>
+                          {t.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -3706,9 +3734,17 @@ function FleetTab({
                       <SelectValue placeholder="Select" />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl">
-                      {["Bike", "Car", "Van", "Truck", "Pickup"].map((t) => (
-                        <SelectItem key={t} value={t.toLowerCase()}>
-                          {t}
+                      {[
+                        { value: "cargo_van",      label: "Cargo Van" },
+                        { value: "box_truck",      label: "Box Truck" },
+                        { value: "dry_van",        label: "Dry Van" },
+                        { value: "flatbed",        label: "Flatbed" },
+                        { value: "reefer",         label: "Reefer" },
+                        { value: "power_only",     label: "Power Only" },
+                        { value: "auto_transport", label: "Auto Transport" },
+                      ].map((t) => (
+                        <SelectItem key={t.value} value={t.value}>
+                          {t.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -6828,14 +6864,26 @@ function DriverAssignPanel({
 
 // ─── Requests tab helpers ─────────────────────────────────────────────────────
 
+const VEHICLE_LABELS: Record<string, string> = {
+  // Current freight types
+  cargo_van: "Cargo Van",
+  box_truck: "Box Truck",
+  dry_van: "Dry Van",
+  flatbed: "Flatbed",
+  reefer: "Reefer",
+  power_only: "Power Only",
+  auto_transport: "Auto Transport",
+  company_driver: "Company Driver",
+  // Legacy values — kept for existing Firestore records
+  bike_rider: "Bike",
+  car_driver: "Car",
+  van_driver: "Van",
+  truck_driver: "Truck",
+};
+
 function getVehicleLabel(transportType: string | null | undefined): string {
   const t = (transportType ?? "").toLowerCase();
-  if (t === "bike" || t === "motorcycle") return "Bike";
-  if (t === "car" || t === "economy" || t === "premium") return "Car";
-  if (t === "van" || t === "xl") return "Van";
-  if (t === "truck") return "Truck";
-  if (t === "company_driver") return "Company Driver";
-  return transportType ?? "—";
+  return VEHICLE_LABELS[t] ?? transportType ?? "—";
 }
 
 function RequestCardSkeleton({
@@ -9734,11 +9782,22 @@ export default function CompanyDashboard() {
     (r) => r.status === "completed",
   );
 
+  const quotedRequestIds = new Set(activeQuotes.map((q) => q.requestId));
+  const reqOpenCount = openCompanyRequests.filter(
+    (r) => !quotedRequestIds.has(r.id) && r.status !== "cancelled",
+  ).length;
+  const reqQuotesCount = activeQuotes.length;
+  const reqAssignedCount = ownedCompanyRequests.filter(
+    (r) => !["admin_review", "completed", "cancelled"].includes(r.status),
+  ).length;
+  const reqTotalBadge = reqOpenCount + reqQuotesCount + reqAssignedCount;
+
   const NAV: {
     id: Tab;
     label: string;
     icon: React.ElementType;
     badge?: number;
+    badgeBreakdown?: string;
   }[] = [
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
     { id: "analytics", label: "Analytics", icon: BarChart2 },
@@ -9760,17 +9819,11 @@ export default function CompanyDashboard() {
       id: "requests",
       label: "Requests",
       icon: Building2,
-      badge:
-        openCompanyRequests.length +
-        ownedCompanyRequests.filter((r) =>
-          [
-            "pending",
-            "admin_review",
-            "negotiating",
-            "payment_pending",
-            "customer_confirmed",
-          ].includes(r.status),
-        ).length,
+      badge: reqTotalBadge,
+      badgeBreakdown:
+        reqTotalBadge > 0
+          ? `${reqOpenCount} open · ${reqQuotesCount} quotes · ${reqAssignedCount} assigned`
+          : undefined,
     },
     {
       id: "history",

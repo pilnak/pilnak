@@ -598,6 +598,20 @@ const isShareable = (s: string) =>
     "arrived",
   ].includes(s);
 
+const TRACKING_STATUSES = new Set([
+  "customer_confirmed",
+  "driver_assigned",
+  "driver_accepted",
+  "in_progress",
+  "arrived",
+  "awaiting_signature",
+  "completed",
+]);
+
+function getTrackingView(status: string): "tracking" | "negotiation" {
+  return TRACKING_STATUSES.has(status) ? "tracking" : "negotiation";
+}
+
 // ── DashboardSkeleton ─────────────────────────────────────────────────────────
 
 function DashboardSkeleton() {
@@ -2809,7 +2823,7 @@ export default function CustomerDashboard() {
   const handleDeliverySuccess = (id: string) => {
     setHeroBooking(null);
     setSelectedDelivery(id);
-    setViewMode("tracking");
+    setViewMode("negotiation");
     toast.success("Delivery request created!");
   };
 
@@ -3280,7 +3294,7 @@ export default function CustomerDashboard() {
                         className="bg-gray-50 rounded-xl p-3 cursor-pointer group hover:bg-gray-100/80 transition-colors"
                         onClick={() => {
                           setSelectedDelivery(d.id);
-                          setViewMode("tracking");
+                          setViewMode(getTrackingView(d.status));
                         }}
                       >
                         <div className="flex items-center justify-between mb-2">
@@ -3548,17 +3562,7 @@ export default function CustomerDashboard() {
                     cancellingId={cancellingId}
                     onTrack={(id) => {
                       setSelectedDelivery(id);
-                      const isCompanyNegotiating =
-                        d.workflowOwner === "company" &&
-                        [
-                          "negotiating_price",
-                          "price_set",
-                          "payment_pending",
-                          "customer_confirmed",
-                        ].includes(d.status);
-                      setViewMode(
-                        isCompanyNegotiating ? "negotiation" : "tracking",
-                      );
+                      setViewMode(getTrackingView(d.status));
                     }}
                     onRate={handleOpenRating}
                     onCancel={handleCancel}
