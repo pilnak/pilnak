@@ -154,27 +154,27 @@ describe("broadcast proximity filter (driver-side)", () => {
   const driver = { lat: 6.5244, lng: 3.3792 };
 
   it("includes a matching broadcast within 10 km", () => {
-    const b: MinBroadcast = { transportType: "bike_rider", pickup: { lat: 6.53, lng: 3.38 } };
-    expect(isNearbyBroadcast(b, driver.lat, driver.lng, "bike_rider")).toBe(true);
+    const b: MinBroadcast = { transportType: "cargo_van", pickup: { lat: 6.53, lng: 3.38 } };
+    expect(isNearbyBroadcast(b, driver.lat, driver.lng, "cargo_van")).toBe(true);
   });
 
   it("excludes a broadcast beyond 10 km", () => {
-    const b: MinBroadcast = { transportType: "bike_rider", pickup: { lat: 6.7, lng: 3.5 } };
-    expect(isNearbyBroadcast(b, driver.lat, driver.lng, "bike_rider")).toBe(false);
+    const b: MinBroadcast = { transportType: "cargo_van", pickup: { lat: 6.7, lng: 3.5 } };
+    expect(isNearbyBroadcast(b, driver.lat, driver.lng, "cargo_van")).toBe(false);
   });
 
   it("excludes a broadcast with a different vehicle type", () => {
-    const b: MinBroadcast = { transportType: "car_driver", pickup: { lat: 6.53, lng: 3.38 } };
-    expect(isNearbyBroadcast(b, driver.lat, driver.lng, "bike_rider")).toBe(false);
+    const b: MinBroadcast = { transportType: "dry_van", pickup: { lat: 6.53, lng: 3.38 } };
+    expect(isNearbyBroadcast(b, driver.lat, driver.lng, "cargo_van")).toBe(false);
   });
 
   it("excludes a broadcast with missing pickup coordinates", () => {
-    const b = { transportType: "bike_rider", pickup: { lat: 0, lng: 0 } };
-    expect(isNearbyBroadcast(b, driver.lat, driver.lng, "bike_rider")).toBe(false);
+    const b = { transportType: "cargo_van", pickup: { lat: 0, lng: 0 } };
+    expect(isNearbyBroadcast(b, driver.lat, driver.lng, "cargo_van")).toBe(false);
   });
 
   it("includes when the broadcast is exactly at the driver location", () => {
-    const b: MinBroadcast = { transportType: "bike_rider", pickup: driver };
-    expect(isNearbyBroadcast(b, driver.lat, driver.lng, "bike_rider")).toBe(true);
+    const b: MinBroadcast = { transportType: "cargo_van", pickup: driver };
+    expect(isNearbyBroadcast(b, driver.lat, driver.lng, "cargo_van")).toBe(true);
   });
 });

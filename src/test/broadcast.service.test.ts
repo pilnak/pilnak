@@ -61,7 +61,7 @@ const sampleData: DeliveryBroadcastData = {
   customerId: "cust-1",
   pickup: { address: "123 Main St", lat: 6.5244, lng: 3.3792 },
   dropoff: { address: "456 End Ave", lat: 6.6, lng: 3.4 },
-  transportType: "bike_rider",
+  transportType: "cargo_van",
   estimatedPrice: 1500,
   distanceKm: 8.2,
   allowNegotiation: true,
@@ -269,7 +269,7 @@ describe("listenActiveBroadcasts", () => {
       id,
       data: () => ({
         status: "active",
-        transportType: "bike_rider",
+        transportType: "cargo_van",
         estimatedPrice: 1000,
         distanceKm: 5,
         allowNegotiation: true,
