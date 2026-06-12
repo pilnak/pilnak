@@ -98,9 +98,47 @@ ETA estimation uses Lagos traffic speeds: peak 15 km/h, off-peak 30 km/h, night 
 - **Geocoding/search:** Google Maps API via `useLocationSearch` hook — address autocomplete and reverse geocoding only.
 - **Device location:** `useGeolocation` hook requests browser permission, then `watchPosition`. Permission grant is session-persisted so it doesn't re-prompt on re-render. Optional database writes are throttled via `updateInterval`.
 
+### Delivery Status State Machine
+
+The authoritative delivery lifecycle lives in Firestore as `DeliveryStatus` (defined in [src/services/firebase.ts](src/services/firebase.ts)):
+
+```
+pending → admin_review → negotiating_price → price_set → payment_pending
+  → customer_confirmed → driver_assigned → driver_accepted
+  → in_progress → arrived → awaiting_signature → completed
+```
+
+Any state can transition to `cancelled`. `RideStatus` (in [src/types/booking.ts](src/types/booking.ts)) is a simplified UI-only enum; `deliveryStatusToRideStatus()` maps between them.
+
+### Delivery Workflows
+
+Three distinct flows share the same `DeliveryStatus` machine:
+
+- **Admin workflow** (default): Admin reviews the request, sets price, confirms payment, and assigns a driver. All transitions are manual via `AdminDashboard`.
+- **Company workflow**: Company accounts claim open requests, submit competitive quotes, and assign their own fleet drivers. Uses `delivery_quotes` and `delivery_broadcasts` collections.
+- **Self-driver / broadcast workflow**: Customer selects `self_driver` or `company_driver` transport. A broadcast is created; nearby drivers express interest; customer picks one for instant match. Uses `listenActiveBroadcasts()` and `respondToBroadcast()` in `firebase.ts`.
+
 ### Data Layer
 
-All Firestore operations are in [src/services/firebase.ts](src/services/firebase.ts) (general) and [src/services/companyService.ts](src/services/companyService.ts) (company fleet operations). Real-time updates use Firestore `onSnapshot` — not polling. Atomic multi-doc changes use Firestore transactions. Database types are in [src/types/database.ts](src/types/database.ts).
+All Firestore operations are in [src/services/firebase.ts](src/services/firebase.ts) (general) and [src/services/companyService.ts](src/services/companyService.ts) (company fleet operations). Real-time updates use Firestore `onSnapshot` — not polling. Atomic multi-doc changes use Firestore transactions.
+
+**Active Firestore collections:**
+
+| Collection | Purpose |
+|---|---|
+| `users` | User profiles + role (`admin`/`customer`/`driver`) |
+| `drivers` | Driver profiles, approval status, live location |
+| `delivery_requests` | Core delivery orders (source of truth for status) |
+| `assignments` | Links a driver to a delivery request |
+| `delivery_quotes` | Company-submitted price bids on requests |
+| `delivery_broadcasts` | Instant-match broadcasts for self/company driver flow |
+| `companies` | Company profiles, approval status, wallet |
+| `vehicles` | Fleet vehicles owned by company drivers |
+| `notifications` | User-facing notifications |
+| `admin_notifications` | Admin-facing notifications |
+| `chats` / `messages` | Support + delivery chat threads |
+
+**Type note:** [src/types/database.ts](src/types/database.ts) is a leftover Supabase-era schema (snake_case, string IDs). Active Firestore document interfaces are defined inline in [src/services/firebase.ts](src/services/firebase.ts) (e.g. `UserDoc`, `DriverDoc`, `DeliveryRequestDoc`).
 
 `companyService.ts` uses a `stripUndefined()` helper before writing to Firestore to avoid storing `undefined` fields.
 
@@ -112,6 +150,8 @@ All Firestore operations are in [src/services/firebase.ts](src/services/firebase
 - Vite manual chunk splitting: `vendor-react`, `vendor-firebase`, `vendor-query`, `vendor-ui`, `vendor-map`, `vendor-charts` — keep heavy imports in their respective bundles.
 - Image uploads go to Cloudinary; file attachments to Firebase Storage.
 - Vercel Analytics and Speed Insights are initialized in the root render.
+- React Query defaults (`src/App.tsx`): `staleTime: 60s`, `gcTime: 10min`, `retry: 1`, `refetchOnWindowFocus: false`. Primary server state comes from Firestore `onSnapshot` listeners, not React Query.
+- Test mocks use `vi.hoisted()` to hoist Firebase mock setup before imports. See `src/test/broadcast.service.test.ts` for the pattern.
 
 ## Environment Variables
 
